@@ -5,7 +5,7 @@ export const config = {
   matcher: ["/dashboard/:path*", "/admin/:path*"],
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = getSessionFromRequest(request);
   const session = token ? await verifySessionToken(token) : null;
 

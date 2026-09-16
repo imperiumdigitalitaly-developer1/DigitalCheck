@@ -8,7 +8,8 @@ export const runtime = "nodejs";
 
 const schema = z.object({ message: z.string().trim().min(1).max(2000) });
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getCurrentSession();
   if (!session) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
 

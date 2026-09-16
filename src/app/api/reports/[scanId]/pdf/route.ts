@@ -6,7 +6,8 @@ import { generateReportPdf } from "@/lib/pdf/report-pdf";
 
 export const runtime = "nodejs";
 
-export async function GET(request: NextRequest, { params }: { params: { scanId: string } }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ scanId: string }> }) {
+  const params = await props.params;
   const slug = request.nextUrl.searchParams.get("slug");
 
   const scan = await prisma.scan.findUnique({

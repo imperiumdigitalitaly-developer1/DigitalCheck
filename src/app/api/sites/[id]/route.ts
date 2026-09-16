@@ -4,7 +4,8 @@ import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { fromDbBusinessType } from "@/lib/db/enum-map";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getCurrentSession();
   if (!session) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
 
@@ -53,7 +54,8 @@ const patchSchema = z.object({
   scanFrequencyDays: z.number().int().min(1).max(90).optional(),
 });
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getCurrentSession();
   if (!session) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
 
@@ -97,7 +99,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   });
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getCurrentSession();
   if (!session) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
 

@@ -23,7 +23,7 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, organizationName }),
       });
-      const data = await response.json();
+      const data = await response.json() as any;
       if (!response.ok) {
         setError(data.error ?? "Registrazione non riuscita.");
         setLoading(false);

@@ -39,7 +39,7 @@ function RequestStep() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     setMessage(data.message ?? "Se l'indirizzo e' registrato, riceverai un'email.");
     setDevLink(data.devResetLink ?? null);
     setLoading(false);
@@ -103,7 +103,7 @@ function ConfirmStep({ token }: { token: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, newPassword }),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!response.ok) {
       setError(data.error ?? "Non e' stato possibile aggiornare la password.");
       setLoading(false);

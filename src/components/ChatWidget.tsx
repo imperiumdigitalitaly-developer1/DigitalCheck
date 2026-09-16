@@ -29,7 +29,7 @@ export function ChatWidget() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, history: nextMessages.slice(-6) }),
       });
-      const data = await response.json();
+      const data = await response.json() as any;
       if (response.ok) {
         setMessages((m) => [...m, { role: "assistant", text: data.answer }]);
       } else {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, use } from "react";
 import Link from "next/link";
 
 interface ScanHistoryItem {
@@ -37,7 +37,8 @@ const PRO_FEATURES = [
   "Fino a 10 siti monitorati, 100 scansioni al mese",
 ];
 
-export default function SiteDetailPage({ params }: { params: { id: string } }) {
+export default function SiteDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const [site, setSite] = useState<SiteDetail | null>(null);
   const [isPro, setIsPro] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -63,7 +64,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
     if (siteRes.ok) setSite(await siteRes.json());
     else setError("Sito non trovato.");
     if (meRes.ok) {
-      const me = await meRes.json();
+      const me = await meRes.json() as any;
       setIsPro(me.user?.plan === "PRO");
     }
     setLoading(false);
@@ -87,7 +88,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ monitoringEnabled: !site.monitoringEnabled }),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!response.ok) {
       if (response.status === 403) {
         setUpgradePrompt(true);
@@ -101,13 +102,13 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
 
   async function handleShare(scanId: string) {
     const response = await fetch(`/api/reports/${scanId}/share`, { method: "POST" });
-    const data = await response.json();
+    const data = await response.json() as any;
     if (response.ok) setShareUrl(data.pdfUrl);
   }
 
   async function handleUpgrade() {
     const response = await fetch("/api/billing/checkout", { method: "POST" });
-    const data = await response.json();
+    const data = await response.json() as any;
     if (data.url) window.location.href = data.url;
     else alert(data.error ?? "Pagamenti non disponibili al momento.");
   }
@@ -122,7 +123,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question }),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!response.ok) {
       if (response.status === 403) setUpgradePrompt(true);
       else setAdvisorError(data.error ?? "Non e' stato possibile ottenere una risposta.");
@@ -143,7 +144,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: helpMessage }),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!response.ok) {
       if (response.status === 403) setUpgradePrompt(true);
       else setHelpSent(data.error ?? "Non e' stato possibile inviare la richiesta.");

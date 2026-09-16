@@ -56,7 +56,7 @@ export default function DashboardPage() {
 
   const loadData = useCallback(async () => {
     const [meRes, sitesRes] = await Promise.all([fetch("/api/auth/me"), fetch("/api/sites")]);
-    const me = await meRes.json();
+    const me = await meRes.json() as any;
     setUser(me.user);
     if (sitesRes.ok) setSites(await sitesRes.json());
     setLoading(false);
@@ -80,7 +80,7 @@ export default function DashboardPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url: newUrl, businessType: newBusinessType, goal: newGoal }),
     });
-    const data = await response.json();
+    const data = await response.json() as any;
     if (!response.ok) {
       setFormError(data.error ?? "Non e' stato possibile aggiungere il sito.");
       return;
@@ -99,7 +99,7 @@ export default function DashboardPage() {
 
   async function handleUpgrade() {
     const response = await fetch("/api/billing/checkout", { method: "POST" });
-    const data = await response.json();
+    const data = await response.json() as any;
     if (data.url) window.location.href = data.url;
     else alert(data.error ?? "Pagamenti non disponibili al momento.");
   }

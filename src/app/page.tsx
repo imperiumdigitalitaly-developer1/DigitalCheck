@@ -45,7 +45,7 @@ export default function HomePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, businessType, goal }),
       });
-      const data = await response.json();
+      const data = await response.json() as any;
       if (!response.ok) {
         setError(data.error ?? "Si e' verificato un errore durante l'analisi.");
         setStatus("error");

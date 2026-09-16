@@ -3,7 +3,8 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 
-export async function POST(request: NextRequest, { params }: { params: { scanId: string } }) {
+export async function POST(request: NextRequest, props: { params: Promise<{ scanId: string }> }) {
+  const params = await props.params;
   const session = await getCurrentSession();
   if (!session) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
 

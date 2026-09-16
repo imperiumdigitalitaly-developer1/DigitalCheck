@@ -3,6 +3,10 @@ import { Fraunces, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { ChatWidget } from "@/components/ChatWidget";
 
+// @next-codemod-ignore Cache Components adoption: this segment temporarily allows blocking.
+// Remove this opt-out after verifying the segment passes validation without it.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-display",

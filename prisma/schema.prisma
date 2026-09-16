@@ -4,8 +4,9 @@
 // solo di collegare un DATABASE_URL reale e attivare `prisma migrate`.
 
 generator client {
+  engineType = "client"
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+previewFeatures = ["driverAdapters"]
 }
 
 datasource db {

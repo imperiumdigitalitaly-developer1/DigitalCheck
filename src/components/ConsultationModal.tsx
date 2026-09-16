@@ -26,7 +26,7 @@ export function ConsultationModal({ onClose, prefillUrl }: ConsultationModalProp
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, phone, message, url: prefillUrl }),
       });
-      const data = await response.json();
+      const data = await response.json() as any;
       if (!response.ok) {
         setError(data.error ?? "Non e' stato possibile inviare la richiesta.");
         setSending(false);

@@ -13,7 +13,8 @@ export const runtime = "nodejs";
  * autenticata di /api/scan, che invece resta stateless per il widget
  * pubblico della landing page.
  */
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getCurrentSession();
   if (!session) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
 

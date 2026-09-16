@@ -39,7 +39,7 @@ function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await response.json();
+      const data = await response.json() as any;
       if (!response.ok) {
         setError(data.error ?? "Accesso non riuscito.");
         setLoading(false);

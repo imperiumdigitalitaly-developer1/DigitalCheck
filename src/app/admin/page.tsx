@@ -61,28 +61,28 @@ export default function AdminPage() {
 
   const loadStats = useCallback(async () => {
     const res = await fetch("/api/admin/stats");
-    const data = await res.json();
+    const data = await res.json() as any;
     if (!res.ok) return setError(data.error ?? "Errore");
     setStats(data);
   }, []);
 
   const loadUsers = useCallback(async () => {
     const res = await fetch("/api/admin/users");
-    const data = await res.json();
+    const data = await res.json() as any;
     if (!res.ok) return setError(data.error ?? "Errore");
     setUsers(data);
   }, []);
 
   const loadSites = useCallback(async () => {
     const res = await fetch("/api/admin/sites");
-    const data = await res.json();
+    const data = await res.json() as any;
     if (!res.ok) return setError(data.error ?? "Errore");
     setSites(data);
   }, []);
 
   const loadLimits = useCallback(async () => {
     const res = await fetch("/api/admin/usage-limits");
-    const data = await res.json();
+    const data = await res.json() as any;
     if (!res.ok) return setError(data.error ?? "Errore");
     setLimits(data);
   }, []);
