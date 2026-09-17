@@ -368,6 +368,15 @@ export default function HomePage() {
           <span className="font-display text-lg">DigitalCheck</span>
           <span className="text-xs text-ink-soft">powered by Imperium Digital</span>
         </div>
+        <nav className="mt-4 flex items-center justify-center gap-4 text-xs text-ink-soft">
+          <Link href="/privacy" className="hover:text-ink">
+            Privacy Policy
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/termini" className="hover:text-ink">
+            Termini di Servizio
+          </Link>
+        </nav>
         <p className="mt-2 text-xs text-ink-soft">
           © {new Date().getFullYear()} Imperium Digital. Tutti i dati mostrati provengono da analisi tecniche reali.
         </p>
