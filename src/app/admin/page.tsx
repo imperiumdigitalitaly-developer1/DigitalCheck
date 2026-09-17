@@ -46,6 +46,8 @@ interface PlanLimit {
   maxSites: number;
   maxScansMonth: number;
   maxPagesScan: number;
+  maxScansWeek: number | null;
+  maxSitesMonth: number | null;
 }
 
 type Tab = "overview" | "users" | "sites" | "limits";
@@ -118,7 +120,7 @@ export default function AdminPage() {
     setSavingLimit(null);
   }
 
-  function updateLimitField(plan: "FREE" | "PRO", field: keyof PlanLimit, value: number) {
+  function updateLimitField(plan: "FREE" | "PRO", field: keyof PlanLimit, value: number | null) {
     setLimits((prev) => prev?.map((l) => (l.plan === plan ? { ...l, [field]: value } : l)) ?? null);
   }
 
@@ -127,10 +129,14 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-paper px-6 py-10">
       <div className="mx-auto max-w-5xl">
-        <Link href="/dashboard" className="text-sm text-ink-soft hover:text-ink">
+        <div className="flex items-baseline gap-2">
+          <span className="font-display text-lg">DigitalCheck</span>
+          <span className="text-xs text-ink-soft">powered by Imperium Digital</span>
+        </div>
+        <Link href="/dashboard" className="mt-4 inline-block text-sm text-ink-soft hover:text-ink">
           ← Torna alla dashboard
         </Link>
-        <h1 className="mt-2 font-display text-2xl">Amministrazione</h1>
+        <h1 className="mt-2 font-display text-2xl">DigitalCheck — Amministrazione</h1>
 
         <div className="mt-6 flex gap-2 border-b border-line">
           {([
@@ -260,25 +266,49 @@ export default function AdminPage() {
               limits.map((l) => (
                 <div key={l.plan} className="rounded-lg border border-line bg-white p-5">
                   <h3 className="font-display text-lg">{l.plan === "PRO" ? "Piano Pro" : "Piano Free"}</h3>
+                  {l.plan === "PRO" ? (
+                    <p className="mt-1 text-xs text-ink-soft">
+                      Siti: illimitati (regola di prodotto, non modificabile qui). Analisi mensili e pagine per
+                      scan restano configurabili.
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-ink-soft">
+                      Regola di prodotto: 1 analisi a settimana, 1 sito nuovo al mese.
+                    </p>
+                  )}
                   <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <label className="text-sm text-ink-soft">
-                      Siti massimi
-                      <input
-                        type="number"
-                        value={l.maxSites}
-                        onChange={(e) => updateLimitField(l.plan, "maxSites", Number(e.target.value))}
-                        className="mt-1 w-full rounded-md border border-line px-3 py-2 text-ink outline-none focus:border-accent"
-                      />
-                    </label>
-                    <label className="text-sm text-ink-soft">
-                      Scansioni/mese
-                      <input
-                        type="number"
-                        value={l.maxScansMonth}
-                        onChange={(e) => updateLimitField(l.plan, "maxScansMonth", Number(e.target.value))}
-                        className="mt-1 w-full rounded-md border border-line px-3 py-2 text-ink outline-none focus:border-accent"
-                      />
-                    </label>
+                    {l.plan === "FREE" ? (
+                      <>
+                        <label className="text-sm text-ink-soft">
+                          Analisi/settimana
+                          <input
+                            type="number"
+                            value={l.maxScansWeek ?? 1}
+                            onChange={(e) => updateLimitField(l.plan, "maxScansWeek", Number(e.target.value))}
+                            className="mt-1 w-full rounded-md border border-line px-3 py-2 text-ink outline-none focus:border-accent"
+                          />
+                        </label>
+                        <label className="text-sm text-ink-soft">
+                          Nuovi siti/mese
+                          <input
+                            type="number"
+                            value={l.maxSitesMonth ?? 1}
+                            onChange={(e) => updateLimitField(l.plan, "maxSitesMonth", Number(e.target.value))}
+                            className="mt-1 w-full rounded-md border border-line px-3 py-2 text-ink outline-none focus:border-accent"
+                          />
+                        </label>
+                      </>
+                    ) : (
+                      <label className="text-sm text-ink-soft">
+                        Scansioni/mese
+                        <input
+                          type="number"
+                          value={l.maxScansMonth}
+                          onChange={(e) => updateLimitField(l.plan, "maxScansMonth", Number(e.target.value))}
+                          className="mt-1 w-full rounded-md border border-line px-3 py-2 text-ink outline-none focus:border-accent"
+                        />
+                      </label>
+                    )}
                     <label className="text-sm text-ink-soft">
                       Pagine per scan
                       <input

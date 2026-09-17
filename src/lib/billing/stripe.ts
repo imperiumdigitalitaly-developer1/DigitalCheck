@@ -44,3 +44,29 @@ export async function createProCheckoutSession(
 
   return { url: session.url };
 }
+
+export interface CreatePortalResult {
+  url: string | null;
+  error?: string;
+}
+
+/**
+ * Portale Stripe per gestire l'abbonamento gia' attivo (cambio piano,
+ * aggiornamento metodo di pagamento, cancellazione) — brief sezione 38.
+ */
+export async function createBillingPortalSession(
+  stripeCustomerId: string,
+  appUrl: string
+): Promise<CreatePortalResult> {
+  const stripe = getStripeClient();
+  if (!stripe) {
+    return { url: null, error: "Pagamenti non configurati: STRIPE_SECRET_KEY mancante in .env." };
+  }
+
+  const session = await stripe.billingPortal.sessions.create({
+    customer: stripeCustomerId,
+    return_url: `${appUrl}/dashboard/settings`,
+  });
+
+  return { url: session.url };
+}

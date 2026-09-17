@@ -236,35 +236,89 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PIANI */}
+      {/* AI */}
       <section className="border-b border-line bg-white px-6 py-16">
+        <div className="mx-auto max-w-4xl grid grid-cols-1 gap-10 sm:grid-cols-2">
+          <div>
+            <h2 className="font-display text-3xl">Intelligenza artificiale</h2>
+            <p className="mt-3 max-w-prose text-ink-soft">
+              Trasforma dati tecnici complessi in indicazioni comprensibili e operative. L&apos;AI di DigitalCheck
+              interpreta i dati PageSpeed — non li sostituisce — e spiega cosa fare, in ordine di priorita'.
+            </p>
+          </div>
+          <div>
+            <h2 className="font-display text-3xl">Un centro di controllo</h2>
+            <p className="mt-3 max-w-prose text-ink-soft">
+              Con il Gestionale di DigitalCheck Pro monitori performance, metriche e stato tecnico di tutti i tuoi
+              siti da un unico ambiente, con storico e alert quando qualcosa cambia.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* PIANI */}
+      <section id="pricing" className="border-b border-line bg-white px-6 py-16">
         <div className="mx-auto max-w-4xl">
-          <h2 className="font-display text-3xl">Piano gratuito e Pro</h2>
+          <h2 className="font-display text-3xl">Scopri DigitalCheck</h2>
+          <p className="mt-2 max-w-prose text-ink-soft">Analizza, monitora e migliora i tuoi siti web.</p>
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div className="rounded-lg border border-line p-6">
               <h3 className="font-display text-xl">Free</h3>
-              <p className="mt-1 text-sm text-ink-soft">Per iniziare a capire dove sei</p>
+              <p className="mt-1 text-sm text-ink-soft">Per provare concretamente il servizio</p>
+              <p className="mt-4 font-display text-3xl">€0</p>
               <ul className="mt-4 space-y-2 text-sm text-ink-soft">
-                <li>• Digital Score</li>
-                <li>• Problemi principali</li>
-                <li>• Alcune raccomandazioni</li>
-                <li>• 1 sito, poche analisi al mese</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> 1 analisi a settimana</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> 1 sito al mese</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Analisi essenziale</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Punteggi principali</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Sintesi dei risultati</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Report PDF sintetico di 1 pagina</li>
               </ul>
+              <ul className="mt-4 space-y-2 border-t border-line pt-4 text-sm text-ink-soft">
+                <li className="flex gap-2"><span className="text-severity-high">✕</span> Assistente AI</li>
+                <li className="flex gap-2"><span className="text-severity-high">✕</span> Report completo</li>
+                <li className="flex gap-2"><span className="text-severity-high">✕</span> Gestionale</li>
+                <li className="flex gap-2"><span className="text-severity-high">✕</span> Monitoraggio</li>
+                <li className="flex gap-2"><span className="text-severity-high">✕</span> Analytics avanzate</li>
+                <li className="flex gap-2"><span className="text-severity-high">✕</span> Storico completo</li>
+                <li className="flex gap-2"><span className="text-severity-high">✕</span> Analisi illimitate</li>
+              </ul>
+              <Link
+                href="/register"
+                className="mt-6 block rounded-md border border-line px-4 py-2.5 text-center text-sm font-medium hover:border-accent"
+              >
+                Inizia gratis
+              </Link>
             </div>
             <div className="rounded-lg border border-accent bg-accent-soft/40 p-6">
-              <h3 className="font-display text-xl">Pro</h3>
-              <p className="mt-1 text-sm text-ink-soft">Per non limitarti a sapere cosa non va</p>
+              <h3 className="font-display text-xl">DigitalCheck Pro</h3>
+              <p className="mt-1 text-sm text-ink-soft">La piattaforma completa</p>
+              <p className="mt-4 font-display text-3xl">
+                €6,99 <span className="text-base font-normal text-ink-soft">/ mese</span>
+              </p>
               <ul className="mt-4 space-y-2 text-sm text-ink-soft">
-                <li>• Analisi complete e report dettagliato</li>
-                <li>• Monitoraggio automatico periodico</li>
-                <li>• Storico e confronto dei punteggi nel tempo</li>
-                <li>• Analisi AI avanzata dei contenuti</li>
-                <li>• Assistente AI: testi e correzioni pronti da incollare</li>
-                <li>• Richiedi il nostro intervento diretto per implementarle</li>
-                <li>• Report PDF scaricabili e condivisibili</li>
-                <li>• Fino a 10 siti monitorati, 100 scansioni al mese</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Siti illimitati</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Fino a 200 analisi/mese</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Analisi complete</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> PDF professionali di almeno 5 pagine</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Assistente AI</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> AI integrata con PageSpeed</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Storico analisi</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Gestionale</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Web Analytics</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Metrics</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Observability</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Monitoraggio</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Grafici e report</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Insight AI</li>
+                <li className="flex gap-2"><span className="text-accent">✓</span> Dashboard avanzata</li>
               </ul>
-              <p className="mt-4 text-sm text-ink-soft">6,99 €/mese</p>
+              <Link
+                href="/register"
+                className="mt-6 block rounded-md bg-accent px-4 py-2.5 text-center text-sm font-medium text-paper hover:bg-accent-deep"
+              >
+                Inizia con Pro
+              </Link>
             </div>
           </div>
         </div>
@@ -299,7 +353,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA FINALE */}
-      <section className="px-6 py-16 text-center" id="consulenza">
+      <section className="border-b border-line px-6 py-16 text-center" id="consulenza">
         <h2 className="font-display text-3xl">Pronto a scoprire il tuo Digital Score?</h2>
         <a
           href="#url"
@@ -308,6 +362,16 @@ export default function HomePage() {
           Analizza il mio sito
         </a>
       </section>
+
+      <footer className="px-6 py-10 text-center">
+        <div className="flex items-baseline justify-center gap-2">
+          <span className="font-display text-lg">DigitalCheck</span>
+          <span className="text-xs text-ink-soft">powered by Imperium Digital</span>
+        </div>
+        <p className="mt-2 text-xs text-ink-soft">
+          © {new Date().getFullYear()} Imperium Digital. Tutti i dati mostrati provengono da analisi tecniche reali.
+        </p>
+      </footer>
     </main>
   );
 }

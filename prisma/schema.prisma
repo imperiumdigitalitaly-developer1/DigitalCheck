@@ -44,20 +44,20 @@ enum BusinessType {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
+  id            String    @id @default(cuid())
+  email         String    @unique
   passwordHash  String
   emailVerified DateTime?
-  isAdmin       Boolean        @default(false)
-  plan          PlanType       @default(FREE)
+  isAdmin       Boolean   @default(false)
+  plan          PlanType  @default(FREE)
 
   // Token per reset password / verifica email: salviamo solo l'hash,
   // mai il token in chiaro, cosi' un accesso al database non basta a
   // impersonare un utente. Vedi src/lib/auth/tokens.ts.
-  passwordResetTokenHash    String?
-  passwordResetExpiresAt    DateTime?
-  emailVerifyTokenHash      String?
-  emailVerifyExpiresAt      DateTime?
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
+  emailVerifyTokenHash   String?
+  emailVerifyExpiresAt   DateTime?
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -93,36 +93,50 @@ model Site {
 
   // Monitoraggio periodico (piano Pro). nextScanAt e' letto dal job di
   // cron: vedi src/app/api/cron/rescan/route.ts.
-  monitoringEnabled Boolean  @default(false)
-  scanFrequencyDays Int      @default(7)
+  monitoringEnabled Boolean   @default(false)
+  scanFrequencyDays Int       @default(7)
   nextScanAt        DateTime?
 
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  analyticsConnection     AnalyticsConnection?
+  searchConsoleConnection SearchConsoleConnection?
+  monitoringConfig        MonitoringConfig?
+  aiConversations         AIConversation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([ownerId])
   @@index([monitoringEnabled, nextScanAt])
 }
 
 model Scan {
-  id            String        @id @default(cuid())
-  siteId        String
-  site          Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  status        ScanStatus    @default(REQUESTED)
-  overallScore  Int?
-  pagesCrawled  Int           @default(0)
+  id                    String     @id @default(cuid())
+  siteId                String
+  site                  Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  status                ScanStatus @default(REQUESTED)
+  overallScore          Int?
+  pagesCrawled          Int        @default(0)
   businessImpactSummary String?
-  strengths     String[]      @default([])
-  unverifiable  String[]      @default([])
-  errorCode     String?
-  errorMessage  String?
-  retryCount    Int           @default(0)
-  startedAt     DateTime      @default(now())
-  completedAt   DateTime?
-  scores        ScanScore[]
-  issues        ScanIssue[]
+  strengths             String[]   @default([])
+  unverifiable          String[]   @default([])
+
+  // Interpretazione AI completa (sezione 12/33 del brief): salvata qui
+  // cosi' un report ricostruito da uno scan storico (PDF, pagina di
+  // dettaglio) resta identico a quello mostrato subito dopo lo scan,
+  // invece di perdere l'analisi AI dopo la persistenza.
+  aiConversionAnalysis String?
+  aiContentAnalysis    String?
+  aiPriorities         String[] @default([])
+
+  errorCode       String?
+  errorMessage    String?
+  retryCount      Int              @default(0)
+  startedAt       DateTime         @default(now())
+  completedAt     DateTime?
+  scores          ScanScore[]
+  issues          ScanIssue[]
   recommendations Recommendation[]
-  reports       Report[]
+  reports         Report[]
 
   @@index([siteId, startedAt])
 }
@@ -168,33 +182,38 @@ model Recommendation {
 }
 
 model Report {
-  id        String   @id @default(cuid())
-  scanId    String
-  scan      Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
-  pdfUrl    String?
-  publicSlug String? @unique
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  scanId     String
+  scan       Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  pdfUrl     String?
+  publicSlug String?  @unique
+  createdAt  DateTime @default(now())
 }
 
 model Subscription {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   stripeCustomerId     String?
   stripeSubscriptionId String?
-  plan                 PlanType @default(FREE)
+  plan                 PlanType  @default(FREE)
   currentPeriodEnd     DateTime?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 // Limiti per piano, letti a runtime — mai hardcoded nella logica applicativa.
+// maxScansWeek e maxSitesMonth si applicano solo al piano Free (1 analisi a
+// settimana, 1 sito nuovo al mese); per il piano Pro restano null e non
+// vengono applicati (siti illimitati, cap solo mensile via maxScansMonth).
 model UsageLimit {
   id            String   @id @default(cuid())
   plan          PlanType @unique
   maxSites      Int
   maxScansMonth Int
   maxPagesScan  Int
+  maxScansWeek  Int?
+  maxSitesMonth Int?
   updatedAt     DateTime @updatedAt
 }
 
@@ -208,4 +227,72 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+// ---------------------------------------------------------------------
+// Gestionale (piano Pro): integrazioni esterne e monitoraggio.
+// Questi modelli esistono per rendere l'architettura pronta a collegare
+// un provider reale (OAuth Google Analytics/Search Console, un servizio
+// di uptime monitoring) — finche' non vengono configurate le credenziali
+// necessarie, `connected` resta false e il Gestionale mostra
+// esplicitamente "Connessione richiesta", mai dati finti.
+// ---------------------------------------------------------------------
+
+model AnalyticsConnection {
+  id           String    @id @default(cuid())
+  siteId       String    @unique
+  site         Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  connected    Boolean   @default(false)
+  propertyId   String?
+  accessToken  String?
+  refreshToken String?
+  connectedAt  DateTime?
+  updatedAt    DateTime  @updatedAt
+}
+
+model SearchConsoleConnection {
+  id           String    @id @default(cuid())
+  siteId       String    @unique
+  site         Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  connected    Boolean   @default(false)
+  siteUrl      String?
+  accessToken  String?
+  refreshToken String?
+  connectedAt  DateTime?
+  updatedAt    DateTime  @updatedAt
+}
+
+model MonitoringConfig {
+  id         String   @id @default(cuid())
+  siteId     String   @unique
+  site       Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  configured Boolean  @default(false)
+  provider   String?
+  checkUrl   String?
+  updatedAt  DateTime @updatedAt
+}
+
+// Storico della conversazione con l'assistente AI per sito (piano Pro):
+// permette di riprendere il contesto invece di perderlo a ogni refresh.
+model AIConversation {
+  id        String      @id @default(cuid())
+  siteId    String
+  site      Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  messages  AIMessage[]
+
+  @@index([siteId, userId])
+}
+
+model AIMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // "user" | "assistant"
+  text           String
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId])
 }

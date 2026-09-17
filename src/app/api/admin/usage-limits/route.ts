@@ -4,8 +4,8 @@ import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 
 const FALLBACK = {
-  FREE: { maxSites: 1, maxScansMonth: 3, maxPagesScan: 5 },
-  PRO: { maxSites: 10, maxScansMonth: 100, maxPagesScan: 20 },
+  FREE: { maxSites: 12, maxScansMonth: 4, maxPagesScan: 5, maxScansWeek: 1, maxSitesMonth: 1 },
+  PRO: { maxSites: 999_999, maxScansMonth: 200, maxPagesScan: 20, maxScansWeek: null, maxSitesMonth: null },
 } as const;
 
 export async function GET() {
@@ -23,6 +23,8 @@ export async function GET() {
       maxSites: row?.maxSites ?? FALLBACK[plan].maxSites,
       maxScansMonth: row?.maxScansMonth ?? FALLBACK[plan].maxScansMonth,
       maxPagesScan: row?.maxPagesScan ?? FALLBACK[plan].maxPagesScan,
+      maxScansWeek: row?.maxScansWeek ?? FALLBACK[plan].maxScansWeek,
+      maxSitesMonth: row?.maxSitesMonth ?? FALLBACK[plan].maxSitesMonth,
     };
   });
 
@@ -31,9 +33,11 @@ export async function GET() {
 
 const schema = z.object({
   plan: z.enum(["FREE", "PRO"]),
-  maxSites: z.number().int().min(1).max(1000),
+  maxSites: z.number().int().min(1).max(1_000_000),
   maxScansMonth: z.number().int().min(1).max(10000),
   maxPagesScan: z.number().int().min(1).max(100),
+  maxScansWeek: z.number().int().min(1).max(1000).nullable().optional(),
+  maxSitesMonth: z.number().int().min(1).max(1000).nullable().optional(),
 });
 
 export async function PATCH(request: NextRequest) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { runScanPipeline } from "@/lib/pipeline/run-scan";
+import { toFreeReport } from "@/lib/billing/report-tiering";
 
 export const runtime = "nodejs"; // serve dns/net, non compatibile con l'edge runtime
 
@@ -79,5 +80,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json(result.report);
+  // Il widget pubblico non richiede un account: e' equivalente al piano
+  // Free (anzi, un assaggio), quindi risponde sempre con il report
+  // troncato — mai con l'analisi completa (brief sezioni 3 e 30).
+  return NextResponse.json(toFreeReport(result.report));
 }

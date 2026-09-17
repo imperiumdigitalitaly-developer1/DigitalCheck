@@ -1,19 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { CategoryKey, DigitalCheckReport, IssueSeverity } from "@/types";
+import type { DigitalCheckReport, IssueSeverity } from "@/types";
 import { ScoreCircle } from "./ScoreCircle";
 import { ConsultationModal } from "./ConsultationModal";
-
-const CATEGORY_LABELS: Record<CategoryKey, string> = {
-  seo: "SEO",
-  performance: "Performance",
-  mobile: "Mobile",
-  content: "Contenuti",
-  conversion: "Conversione",
-  accessibility: "Accessibilita'",
-  technical: "Tecnica",
-};
+import { UpgradeCard } from "./UpgradeCard";
+import { CATEGORY_LABELS } from "@/lib/category-labels";
 
 const SEVERITY_LABELS: Record<IssueSeverity, { label: string; className: string }> = {
   high: { label: "Priorita' alta", className: "bg-severity-high/10 text-severity-high border-severity-high/30" },
@@ -21,7 +13,7 @@ const SEVERITY_LABELS: Record<IssueSeverity, { label: string; className: string 
   low: { label: "Priorita' bassa", className: "bg-severity-low/10 text-severity-low border-severity-low/30" },
 };
 
-export function ReportView({ report }: { report: DigitalCheckReport }) {
+export function ReportView({ report, onUpgrade }: { report: DigitalCheckReport; onUpgrade?: () => void }) {
   const [showConsultation, setShowConsultation] = useState(false);
   const bySeverity = { high: [] as typeof report.issues, medium: [] as typeof report.issues, low: [] as typeof report.issues };
   for (const issue of report.issues) bySeverity[issue.severity].push(issue);
@@ -97,6 +89,18 @@ export function ReportView({ report }: { report: DigitalCheckReport }) {
             ))
           )}
         </div>
+        {report.isFreePreview && (report.hiddenIssueCount ?? 0) > 0 && (
+          <div className="mt-4">
+            <UpgradeCard
+              title="Ci sono altre criticita'"
+              description={`Abbiamo individuato altri ${report.hiddenIssueCount} problem${
+                report.hiddenIssueCount === 1 ? "a" : "i"
+              }. Passa a Pro per visualizzare l'analisi completa, con spiegazioni e azioni per ciascuno.`}
+              onCtaClick={onUpgrade}
+              compact
+            />
+          </div>
+        )}
       </section>
 
       {/* Recommended actions */}
@@ -111,8 +115,54 @@ export function ReportView({ report }: { report: DigitalCheckReport }) {
               </li>
             ))}
           </ol>
+          {report.isFreePreview && (report.hiddenRecommendationCount ?? 0) > 0 && (
+            <p className="mt-3 text-sm text-ink-soft">
+              + altre {report.hiddenRecommendationCount} azioni consigliate disponibili con il piano Pro.
+            </p>
+          )}
         </section>
       )}
+
+      {/* AI Analysis */}
+      <section>
+        <h3 className="font-display text-xl">Analisi AI</h3>
+        {report.aiAnalysis && !report.isFreePreview ? (
+          <div className="mt-4 space-y-4 rounded-lg border border-line bg-white p-6">
+            {report.aiAnalysis.conversionAnalysis && (
+              <div>
+                <p className="text-sm font-medium text-ink">Interpretazione — conversione</p>
+                <p className="mt-1 text-sm text-ink-soft">{report.aiAnalysis.conversionAnalysis}</p>
+              </div>
+            )}
+            {report.aiAnalysis.contentAnalysis && (
+              <div>
+                <p className="text-sm font-medium text-ink">Interpretazione — contenuti</p>
+                <p className="mt-1 text-sm text-ink-soft">{report.aiAnalysis.contentAnalysis}</p>
+              </div>
+            )}
+            {report.aiAnalysis.priorities.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-ink">Suggerimenti prioritari</p>
+                <ol className="mt-1 space-y-1">
+                  {report.aiAnalysis.priorities.map((p, i) => (
+                    <li key={i} className="text-sm text-ink-soft">
+                      {i + 1}. {p}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mt-4">
+            <UpgradeCard
+              title="Assistente AI"
+              description="Analizza i risultati, interpreta le criticita' e ricevi indicazioni operative personalizzate, distinguendo sempre il dato osservato dall'interpretazione e dal suggerimento."
+              onCtaClick={onUpgrade}
+            />
+          </div>
+        )}
+      </section>
 
       {/* Unverifiable */}
       {report.unverifiable.length > 0 && (
