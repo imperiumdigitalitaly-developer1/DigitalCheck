@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getPlanFeatures } from "@/lib/billing/plan-config";
+import { getGoogleOAuthCredentials } from "@/lib/integrations/google-oauth";
 
 /**
  * Stato reale delle integrazioni esterne per un sito (Google Analytics,
@@ -31,8 +32,14 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    analytics: { connected: site.analyticsConnection?.connected ?? false },
-    searchConsole: { connected: site.searchConsoleConnection?.connected ?? false },
+    analytics: {
+      connected: site.analyticsConnection?.connected ?? false,
+      configured: getGoogleOAuthCredentials("analytics") !== null,
+    },
+    searchConsole: {
+      connected: site.searchConsoleConnection?.connected ?? false,
+      configured: getGoogleOAuthCredentials("search-console") !== null,
+    },
     monitoring: { configured: site.monitoringConfig?.configured ?? false },
   });
 }

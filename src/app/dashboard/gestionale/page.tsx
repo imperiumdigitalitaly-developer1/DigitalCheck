@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { DashboardShell } from "@/components/DashboardShell";
 import { MetricCard } from "@/components/MetricCard";
 import { EmptyState } from "@/components/EmptyState";
@@ -46,17 +47,41 @@ interface MetricsData {
 }
 
 interface ConnectionsData {
-  analytics: { connected: boolean };
-  searchConsole: { connected: boolean };
+  analytics: { connected: boolean; configured: boolean };
+  searchConsole: { connected: boolean; configured: boolean };
   monitoring: { configured: boolean };
 }
 
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  missing_site: "Seleziona un sito prima di collegare l'integrazione.",
+  site_not_found: "Sito non trovato o non di tua proprieta'.",
+  plan_required: "Questa integrazione richiede il piano Pro.",
+  not_configured: "Integrazione non ancora configurata lato server.",
+  denied: "Autorizzazione annullata su Google.",
+  invalid_request: "Richiesta OAuth non valida.",
+  invalid_state: "Sessione di autorizzazione scaduta o non valida: riprova.",
+  exchange_failed: "Google non ha confermato l'autorizzazione: riprova.",
+};
+
 export default function GestionalePage() {
+  return (
+    <Suspense fallback={null}>
+      <GestionaleView />
+    </Suspense>
+  );
+}
+
+function GestionaleView() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [user, setUser] = useState<MeUser | null>(null);
   const [sites, setSites] = useState<SiteListItem[]>([]);
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [tab, setTab] = useState<Tab>("overview");
   const [loading, setLoading] = useState(true);
+  const [oauthNotice, setOauthNotice] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
@@ -64,13 +89,41 @@ export default function GestionalePage() {
 
   useEffect(() => {
     Promise.all([fetch("/api/auth/me").then((r) => r.json()), fetch("/api/sites").then((r) => (r.ok ? r.json() : []))]).then(
-      ([me, siteList]) => {
+      ([me, siteList]: [{ user: MeUser | null }, SiteListItem[]]) => {
         setUser(me.user);
         setSites(siteList);
-        if (siteList[0]) setSelectedSiteId(siteList[0].id);
+        const querySiteId = searchParams.get("siteId");
+        const initialSiteId = siteList.find((s) => s.id === querySiteId)?.id ?? siteList[0]?.id;
+        if (initialSiteId) setSelectedSiteId(initialSiteId);
         setLoading(false);
       }
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Consuma una sola volta i parametri di ritorno dal redirect OAuth
+  // (tab/siteId gia' catturati nello state sopra, oauth_error/connected solo
+  // per il messaggio), poi ripulisce l'URL cosi' un refresh non lo ripete.
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    const validTabs: Tab[] = ["overview", "analytics", "search-console", "metrics", "observability"];
+    if (tabParam && (validTabs as string[]).includes(tabParam)) {
+      setTab(tabParam as Tab);
+    }
+    const oauthError = searchParams.get("oauth_error");
+    const connected = searchParams.get("connected");
+    if (oauthError) {
+      setOauthNotice({
+        kind: "error",
+        message: OAUTH_ERROR_MESSAGES[oauthError] ?? "Si e' verificato un errore durante il collegamento.",
+      });
+    } else if (connected === "1") {
+      setOauthNotice({ kind: "success", message: "Integrazione collegata con successo." });
+    }
+    if (tabParam || oauthError || connected) {
+      router.replace(pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadOverview = useCallback(async () => {
@@ -131,6 +184,18 @@ export default function GestionalePage() {
     <DashboardShell user={user}>
       <h1 className="font-display text-2xl">Gestionale</h1>
       <p className="mt-1 text-sm text-ink-soft">DigitalCheck — powered by Imperium Digital</p>
+
+      {oauthNotice && (
+        <div
+          className={`mt-4 rounded-lg border p-3 text-sm ${
+            oauthNotice.kind === "success"
+              ? "border-score-strong/30 bg-score-strong/10 text-score-strong"
+              : "border-severity-high/30 bg-severity-high/10 text-severity-high"
+          }`}
+        >
+          {oauthNotice.message}
+        </div>
+      )}
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1 overflow-x-auto border-b border-line">
@@ -242,6 +307,20 @@ export default function GestionalePage() {
             <p className="mt-3 text-sm text-ink-soft">
               Utenti, sessioni, sorgenti di traffico e pagine principali comparirebbero qui.
             </p>
+          ) : connections?.analytics.configured ? (
+            <>
+              <p className="mt-3 text-sm text-ink-soft">Google Analytics non collegato per questo sito.</p>
+              <p className="mt-1 text-sm text-ink-soft">
+                Collega l&apos;account Google del cliente per visualizzare utenti, sessioni, sorgenti di traffico e
+                pagine principali. La connessione riguarda solo questo sito.
+              </p>
+              <a
+                href={`/api/gestionale/connections/analytics/connect?siteId=${selectedSiteId}`}
+                className="mt-4 inline-block rounded-md bg-accent px-4 py-2 text-sm text-paper hover:bg-accent-deep"
+              >
+                Collega Google Analytics
+              </a>
+            </>
           ) : (
             <>
               <p className="mt-3 text-sm text-ink-soft">Google Analytics non collegato.</p>
@@ -270,6 +349,20 @@ export default function GestionalePage() {
           </div>
           {connections?.searchConsole.connected ? (
             <p className="mt-3 text-sm text-ink-soft">Click, impression, CTR e posizione media comparirebbero qui.</p>
+          ) : connections?.searchConsole.configured ? (
+            <>
+              <p className="mt-3 text-sm text-ink-soft">Google Search Console non collegata per questo sito.</p>
+              <p className="mt-1 text-sm text-ink-soft">
+                Collega l&apos;account Google del cliente per visualizzare click, impression, CTR e posizione media
+                delle query. La connessione riguarda solo questo sito.
+              </p>
+              <a
+                href={`/api/gestionale/connections/search-console/connect?siteId=${selectedSiteId}`}
+                className="mt-4 inline-block rounded-md bg-accent px-4 py-2 text-sm text-paper hover:bg-accent-deep"
+              >
+                Collega Search Console
+              </a>
+            </>
           ) : (
             <>
               <p className="mt-3 text-sm text-ink-soft">Google Search Console non collegata.</p>
