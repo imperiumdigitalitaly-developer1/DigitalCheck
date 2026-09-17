@@ -39,6 +39,9 @@ export const metadata: Metadata = {
     locale: "it_IT",
     type: "website",
   },
+  verification: {
+    google: "I1jUdFPdVpVWIsvhMDE-r2wT-1w0ibFs7HK6gc4BEJU",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
