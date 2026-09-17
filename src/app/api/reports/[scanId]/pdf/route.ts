@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { buildReportFromScan } from "@/lib/pipeline/build-report-from-scan";
 import { generateReportPdf } from "@/lib/pdf/report-pdf";
+import { toFreeReport } from "@/lib/billing/report-tiering";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: { scanId: 
 
   const scan = await prisma.scan.findUnique({
     where: { id: params.scanId },
-    include: { site: true, reports: true },
+    include: { site: { include: { owner: true } }, reports: true },
   });
   if (!scan) return NextResponse.json({ error: "Scan non trovato" }, { status: 404 });
 
@@ -28,12 +29,17 @@ export async function GET(request: NextRequest, { params }: { params: { scanId: 
     return NextResponse.json({ error: "Non autorizzato" }, { status: 403 });
   }
 
-  const report = await buildReportFromScan(params.scanId);
-  if (!report) {
+  const fullReport = await buildReportFromScan(params.scanId);
+  if (!fullReport) {
     return NextResponse.json({ error: "Il report non e' ancora disponibile per questo scan." }, { status: 409 });
   }
 
-  const pdfBytes = await generateReportPdf(report);
+  // Il PDF segue sempre il piano del proprietario del sito: 1 pagina
+  // sintetica per Free, report completo per Pro (brief sezioni 4 e 15) —
+  // anche quando servito tramite link pubblico condiviso.
+  const ownerPlan = scan.site.owner.plan;
+  const report = ownerPlan === "FREE" ? toFreeReport(fullReport) : fullReport;
+  const pdfBytes = await generateReportPdf(report, ownerPlan);
 
   return new NextResponse(Buffer.from(pdfBytes), {
     headers: {

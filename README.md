@@ -1,11 +1,33 @@
-# DigitalCheck — MVP (Fase 1 + Fase 2)
+# DigitalCheck — piattaforma SaaS di Website Intelligence
 
-Analisi digitale per piccole attivita' locali (B&B, case vacanze, ristoranti,
-negozi, professionisti). L'utente inserisce l'URL del proprio sito e ottiene
-un **Digital Score** da 0 a 100 con problemi, punti di forza e azioni
-consigliate, spiegati in linguaggio comprensibile anche a chi non e' tecnico.
+**DigitalCheck**, powered by **Imperium Digital**, e' una piattaforma SaaS
+freemium per l'analisi professionale dei siti web di piccole attivita'
+locali (B&B, case vacanze, ristoranti, negozi, professionisti). L'utente
+inserisce l'URL del proprio sito e ottiene un **Digital Score** da 0 a 100,
+con dati tecnici reali (PageSpeed Insights quando disponibile),
+interpretazione AI, problemi, punti di forza e azioni consigliate, in
+linguaggio comprensibile anche a chi non e' tecnico.
 
-Nome, brand e prezzi sono provvisori (vedi sezione "Brand").
+Gerarchia di brand da rispettare ovunque nel prodotto: **DigitalCheck** e'
+il nome del prodotto, dominante; "powered by Imperium Digital" e' la
+dicitura secondaria che indica il team che lo sviluppa.
+
+## Piani
+
+| | **Free** — €0 | **Pro** — €6,99/mese |
+|---|---|---|
+| Analisi | 1 a settimana | fino a 200/mese |
+| Siti | 1 nuovo al mese | illimitati |
+| Risultati | punteggi + sintesi + alcuni problemi | analisi completa |
+| Assistente AI | — | incluso, con storico per sito |
+| Report PDF | 1 pagina sintetica | almeno 5 pagine, struttura completa |
+| Gestionale (Analytics/Search Console/Metrics/Observability) | — | incluso |
+| Storico e monitoraggio | — | incluso |
+
+I limiti sono applicati **lato server** (mai solo nascosti in UI): vedi
+`src/lib/billing/plan-config.ts` (feature flag per piano) e
+`src/lib/billing/plan-limits.ts` (quote numeriche, con contatori
+settimanali/mensili basati sui dati reali salvati, non su timer finti).
 
 ## 0. Stato del progetto — cosa e' reale, cosa va verificato
 
@@ -165,9 +187,19 @@ per un qualunque scheduler esterno che chiami quell'URL con l'header
 ## 7. Report PDF e condivisione
 
 `src/lib/pdf/report-pdf.ts` genera un PDF A4 con `pdf-lib` (niente browser
-headless): punteggio, riepilogo, punteggi per categoria, punti di forza,
-problemi con priorita' e raccomandazione, azioni consigliate, e cosa non
-e' stato possibile verificare — stessa struttura del report a schermo.
+headless), in due varianti scelte in base al piano del proprietario del
+sito (`generateReportPdf(report, plan)`):
+
+- **Free** (`generateFreeReportPdf`): 1 pagina sintetica — punteggio,
+  punteggi principali, breve sintesi, pochi problemi, rimando elegante al
+  piano Pro. Verificato con un test automatico (`getPageCount() === 1`).
+- **Pro** (`generateProReportPdf`): 5 pagine strutturate — Cover,
+  Executive Summary, Performance, SEO & Accessibility, Best Practices &
+  Action Plan (incluse le interpretazioni AI quando disponibili).
+
+Entrambe condividono lo stesso `DigitalCheckReport`, la stessa fonte dati
+di dashboard/pagina di dettaglio/Gestionale: nessun numero diverso tra
+schermo e PDF.
 
 `POST /api/reports/:scanId/share` crea uno `slug` casuale (Report.publicSlug)
 e restituisce un URL pubblico verso `GET /api/reports/:scanId/pdf?slug=...`,
@@ -186,14 +218,28 @@ risponde con un errore esplicito invece di un link finto.
 in questo ambiente: prima del lancio, verificare con la Stripe CLI
 (`stripe listen --forward-to localhost:3000/api/billing/webhook`).
 
-## 9. Limiti di piano
+## 9. Limiti di piano e feature per piano
 
-`src/lib/billing/plan-limits.ts` legge `UsageLimit` dal database (popolata
-da `prisma/seed.ts`), con fallback via env var se la tabella e' vuota.
-`POST /api/sites` blocca la creazione oltre `maxSites`; `POST
-/api/sites/:id/scan` blocca oltre `maxScansMonth`; il monitoraggio
-periodico (`PATCH` con `monitoringEnabled: true`) e' riservato al piano
-Pro.
+Due file, due responsabilita' distinte (brief, sezione 31):
+
+- `src/lib/billing/plan-config.ts` — feature flag booleane non
+  modificabili da admin (`ai`, `fullReports`, `dashboard`, `monitoring`):
+  sono regole di prodotto, non quote numeriche.
+- `src/lib/billing/plan-limits.ts` — quote numeriche lette da
+  `UsageLimit` (popolata da `prisma/seed.ts`, modificabile dall'area
+  admin), con fallback via env var se la tabella e' vuota:
+  - Free: 1 analisi a settimana (`countScansThisWeek`), 1 sito nuovo al
+    mese (`countSitesThisMonth`).
+  - Pro: siti illimitati (nessun controllo lato server), fino a 200
+    analisi al mese (`countScansThisMonth`).
+
+Applicazione concreta: `POST /api/sites` blocca oltre `maxSitesMonth` solo
+per Free; `POST /api/sites/:id/scan` blocca oltre `maxScansWeek` (Free) o
+`maxScansMonth` (Pro); un utente Free riceve sempre, anche chiamando le
+API direttamente, un report troncato (`src/lib/billing/report-tiering.ts`)
+e un PDF di una pagina — il troncamento non e' mai solo nell'interfaccia.
+Il monitoraggio periodico (`PATCH` con `monitoringEnabled: true`), il
+Gestionale e l'Assistente AI sono riservati al piano Pro.
 
 ## 10. Area admin
 
@@ -256,14 +302,24 @@ di produzione.
 
 ## 14. API/servizi esterni necessari
 
-| Servizio | A cosa serve | Variabili |
-|---|---|---|
-| PostgreSQL (Supabase, Neon, RDS...) | Persistenza | `DATABASE_URL` |
-| Un provider LLM (es. Claude via Anthropic API) | Interpretazione del contenuto | `AI_API_KEY`, `AI_MODEL` |
-| Google PageSpeed Insights API | Core Web Vitals reali | `PAGESPEED_API_KEY` |
-| Stripe | Abbonamento Pro | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO` |
-| Resend (o altro provider email) | Verifica email, reset password | `RESEND_API_KEY`, `EMAIL_FROM` |
-| Scheduler (Vercel Cron o esterno) | Monitoraggio periodico | `CRON_SECRET` |
+Vedi anche `.env.example` per l'elenco completo, commentato, pronto da
+copiare in `.env.local`.
+
+| Servizio | A cosa serve | Variabili | Stato |
+|---|---|---|---|
+| PostgreSQL (Supabase, Neon, RDS...) | Persistenza | `DATABASE_URL` | richiesto |
+| Google Gemini (o altro provider LLM) | Interpretazione AI, Assistente | `AI_API_KEY`, `AI_MODEL` | opzionale (fallback esplicito se assente) |
+| Google PageSpeed Insights API | Core Web Vitals reali | `PAGESPEED_API_KEY` | opzionale (fallback a stima dichiarata) |
+| Stripe | Abbonamento Pro (checkout + portale) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO` | opzionale (errore esplicito se assente) |
+| Resend (o altro provider email) | Verifica email, reset password | `RESEND_API_KEY`, `EMAIL_FROM` | opzionale (link mostrato in dev) |
+| Scheduler (Vercel Cron o esterno) | Monitoraggio periodico | `CRON_SECRET` | richiesto per il cron |
+| Google Analytics Data API (OAuth) | Tab "Web Analytics" del Gestionale | `GOOGLE_ANALYTICS_CLIENT_ID/SECRET` | **non implementato**: schema pronto (`AnalyticsConnection`), OAuth da collegare |
+| Google Search Console API (OAuth) | Tab "Search Console" del Gestionale | `GOOGLE_SEARCH_CONSOLE_CLIENT_ID/SECRET` | **non implementato**: schema pronto (`SearchConsoleConnection`) |
+| Provider di uptime monitoring | Tab "Observability" del Gestionale | `MONITORING_PROVIDER_API_KEY` | **non implementato**: schema pronto (`MonitoringConfig`) |
+
+Finche' le tre integrazioni "non implementate" non vengono collegate, il
+Gestionale mostra sempre esplicitamente "Connessione richiesta" / "Non
+configurato" — mai dati finti (brief, sezioni 17, 20, 45).
 
 ## 15. Stima qualitativa dei costi operativi
 
@@ -309,6 +365,12 @@ deploy.
 
 ## 17. Cosa manca ancora (oltre ai test sopra)
 
+- Integrazione OAuth reale di Google Analytics e Google Search Console
+  nel Gestionale (schema DB pronto — `AnalyticsConnection`,
+  `SearchConsoleConnection` — ma il flusso di collegamento account non e'
+  implementato: richiede credenziali OAuth Google, vedi `.env.example`)
+- Provider di uptime monitoring per la tab Observability (schema pronto —
+  `MonitoringConfig` — nessun provider collegato)
 - Pagina pubblica di visualizzazione del report condiviso (oggi il link
   pubblico serve direttamente il PDF, non una pagina HTML col branding)
 - Flusso di invito/promozione a admin (oggi va fatto a mano sul database)
@@ -318,9 +380,17 @@ deploy.
   l'estrazione in un sistema i18n non e' stata fatta)
 - Costo medio per scan e AI/API usage nell'area admin (richiede di
   collegare la fatturazione del provider AI/PageSpeed)
+- Team/agenzie, white label, API pubbliche, report programmati, alert via
+  email/Slack: l'architettura (modelli relazionali, feature flag
+  centralizzati) non li impedisce, ma non sono implementati in questa
+  fase (brief, sezione 44).
 
 ## 18. Brand
 
-"DigitalCheck" e' il nome scelto per il prodotto; le stringhe non sono
-hardcoded nei componenti, quindi un eventuale ulteriore rebranding resta
-semplice.
+- **Prodotto**: DigitalCheck — nome dominante, usato in navbar, dashboard,
+  report, pagine pubbliche, metadata.
+  - **Sviluppatore/progetto**: Imperium Digital — sempre presente ma
+    secondario ("powered by Imperium Digital"), mai come nome principale
+    della piattaforma.
+- Le stringhe non sono hardcoded pensando a un design system separato,
+  quindi un eventuale ulteriore rebranding resta semplice.

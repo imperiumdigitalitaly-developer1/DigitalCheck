@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import type { DigitalCheckReport } from "@/types";
+import { ReportView } from "@/components/ReportView";
 
 interface ScanHistoryItem {
   id: string;
@@ -55,6 +57,10 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
   const [sendingHelp, setSendingHelp] = useState(false);
   const [helpSent, setHelpSent] = useState<string | null>(null);
 
+  const [openReportScanId, setOpenReportScanId] = useState<string | null>(null);
+  const [reportsByScan, setReportsByScan] = useState<Record<string, DigitalCheckReport>>({});
+  const [loadingReport, setLoadingReport] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     const [siteRes, meRes] = await Promise.all([
       fetch(`/api/sites/${params.id}`),
@@ -64,7 +70,21 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
     else setError("Sito non trovato.");
     if (meRes.ok) {
       const me = await meRes.json();
-      setIsPro(me.user?.plan === "PRO");
+      const pro = me.user?.plan === "PRO";
+      setIsPro(pro);
+      if (pro) {
+        const historyRes = await fetch(`/api/sites/${params.id}/advisor`);
+        if (historyRes.ok) {
+          const { messages } = await historyRes.json();
+          const turns: { question: string; answer: string }[] = [];
+          for (let i = 0; i < messages.length - 1; i += 2) {
+            if (messages[i]?.role === "user" && messages[i + 1]?.role === "assistant") {
+              turns.push({ question: messages[i].text, answer: messages[i + 1].text });
+            }
+          }
+          setAdvisorHistory(turns);
+        }
+      }
     }
     setLoading(false);
   }, [params.id]);
@@ -110,6 +130,23 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
     const data = await response.json();
     if (data.url) window.location.href = data.url;
     else alert(data.error ?? "Pagamenti non disponibili al momento.");
+  }
+
+  async function handleToggleReport(scanId: string) {
+    if (openReportScanId === scanId) {
+      setOpenReportScanId(null);
+      return;
+    }
+    setOpenReportScanId(scanId);
+    if (!reportsByScan[scanId]) {
+      setLoadingReport(scanId);
+      const response = await fetch(`/api/sites/${params.id}/scan/${scanId}/report`);
+      const data = await response.json();
+      if (response.ok) {
+        setReportsByScan((prev) => ({ ...prev, [scanId]: data.report }));
+      }
+      setLoadingReport(null);
+    }
   }
 
   async function handleAskAdvisor(e: React.FormEvent) {
@@ -254,7 +291,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
         )}
 
         <section className="mt-10">
-          <h2 className="font-display text-xl">Assistente AI</h2>
+          <h2 className="font-display text-xl">DigitalCheck AI Assistant</h2>
           {!isPro ? (
             <button
               onClick={() => setUpgradePrompt(true)}
@@ -335,26 +372,45 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
         <div className="mt-4 space-y-2">
           {site.scans.length === 0 && <p className="text-ink-soft">Nessuna scansione ancora eseguita.</p>}
           {site.scans.map((scan) => (
-            <div key={scan.id} className="flex items-center justify-between rounded-lg border border-line bg-white p-4">
-              <div>
-                <p className="text-sm text-ink-soft">{new Date(scan.startedAt).toLocaleString("it-IT")}</p>
-                <p className="text-sm">
-                  {scan.status === "COMPLETED"
-                    ? `Score ${scan.overallScore} · ${scan.issueCount} problemi (${scan.highSeverityCount} alta priorita')`
-                    : scan.status === "FAILED"
-                      ? `Fallito: ${scan.errorMessage}`
-                      : scan.status}
-                </p>
+            <div key={scan.id} className="rounded-lg border border-line bg-white p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-ink-soft">{new Date(scan.startedAt).toLocaleString("it-IT")}</p>
+                  <p className="text-sm">
+                    {scan.status === "COMPLETED"
+                      ? `Score ${scan.overallScore} · ${scan.issueCount} problemi (${scan.highSeverityCount} alta priorita')`
+                      : scan.status === "FAILED"
+                        ? `Fallito: ${scan.errorMessage}`
+                        : scan.status}
+                  </p>
+                </div>
+                {scan.status === "COMPLETED" && (
+                  <div className="flex shrink-0 items-center gap-3">
+                    <button
+                      onClick={() => handleToggleReport(scan.id)}
+                      className="text-sm text-accent hover:underline"
+                    >
+                      {openReportScanId === scan.id ? "Nascondi report" : "Vedi report"}
+                    </button>
+                    <a
+                      href={`/api/reports/${scan.id}/pdf`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm text-accent hover:underline"
+                    >
+                      PDF
+                    </a>
+                  </div>
+                )}
               </div>
-              {scan.status === "COMPLETED" && (
-                <a
-                  href={`/api/reports/${scan.id}/pdf`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm text-accent hover:underline"
-                >
-                  PDF
-                </a>
+              {openReportScanId === scan.id && (
+                <div className="mt-5 border-t border-line pt-5">
+                  {loadingReport === scan.id && <p className="text-sm text-ink-soft">Caricamento report...</p>}
+                  {(() => {
+                    const scanReport = reportsByScan[scan.id];
+                    return scanReport ? <ReportView report={scanReport} onUpgrade={handleUpgrade} /> : null;
+                  })()}
+                </div>
               )}
             </div>
           ))}

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
-import { getPlanLimits, countSites } from "@/lib/billing/plan-limits";
+import { getPlanLimits, countSitesThisMonth } from "@/lib/billing/plan-limits";
 import { toDbBusinessType, fromDbBusinessType } from "@/lib/db/enum-map";
 
 const createSchema = z.object({
@@ -71,12 +71,21 @@ export async function POST(request: NextRequest) {
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.userId } });
   const limits = await getPlanLimits(user.plan);
-  const currentSites = await countSites(session.userId);
-  if (currentSites >= limits.maxSites) {
-    return NextResponse.json(
-      { error: `Hai raggiunto il limite di ${limits.maxSites} siti per il piano ${user.plan}. Passa al piano Pro per aggiungerne altri.` },
-      { status: 403 }
-    );
+
+  // Pro: siti illimitati, nessun controllo. Free: un nuovo sito al mese
+  // (non un tetto di siti totali) — vedi brief sezione 3/31.
+  if (user.plan === "FREE") {
+    const sitesThisMonth = await countSitesThisMonth(session.userId);
+    const cap = limits.maxSitesMonth ?? 1;
+    if (sitesThisMonth >= cap) {
+      return NextResponse.json(
+        {
+          error: `Con il piano Free puoi aggiungere ${cap} sito al mese. Passa a Pro per siti illimitati.`,
+          errorCode: "FREE_SITES_MONTH_LIMIT",
+        },
+        { status: 403 }
+      );
+    }
   }
 
   const site = await prisma.site.create({

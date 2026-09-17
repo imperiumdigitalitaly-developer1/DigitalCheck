@@ -19,6 +19,10 @@ function ResetPasswordContent() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-paper px-6 py-16">
       <div className="w-full max-w-sm">
+        <Link href="/" className="mb-6 flex items-baseline gap-2">
+          <span className="font-display text-lg">DigitalCheck</span>
+          <span className="text-xs text-ink-soft">powered by Imperium Digital</span>
+        </Link>
         {token ? <ConfirmStep token={token} /> : <RequestStep />}
       </div>
     </main>

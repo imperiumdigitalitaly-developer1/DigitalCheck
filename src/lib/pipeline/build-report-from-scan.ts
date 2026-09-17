@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { fromDbBusinessType, fromDbSeverity } from "@/lib/db/enum-map";
 import { scoreLabel } from "@/lib/scoring/weights";
-import type { CategoryKey, DigitalCheckReport, IssueCategory } from "@/types";
+import type { AiAnalysis, CategoryKey, DigitalCheckReport, IssueCategory } from "@/types";
 
 export async function buildReportFromScan(scanId: string): Promise<DigitalCheckReport | null> {
   const scan = await prisma.scan.findUnique({
@@ -10,6 +10,22 @@ export async function buildReportFromScan(scanId: string): Promise<DigitalCheckR
   });
 
   if (!scan || scan.status !== "COMPLETED" || scan.overallScore == null) return null;
+
+  // Ricostruita solo se l'AI aveva effettivamente prodotto un'analisi al
+  // momento dello scan (mai inventata a posteriori): permette a PDF e
+  // pagina di dettaglio, generati da uno scan storico, di mostrare la
+  // stessa interpretazione vista subito dopo la scansione.
+  const aiAnalysis: AiAnalysis | null =
+    scan.aiConversionAnalysis || scan.aiContentAnalysis || scan.aiPriorities.length > 0
+      ? {
+          summary: scan.businessImpactSummary ?? "",
+          strengths: scan.strengths,
+          issues: [],
+          priorities: scan.aiPriorities,
+          conversionAnalysis: scan.aiConversionAnalysis ?? "",
+          contentAnalysis: scan.aiContentAnalysis ?? "",
+        }
+      : null;
 
   return {
     requestedUrl: scan.site.url,
@@ -37,7 +53,7 @@ export async function buildReportFromScan(scanId: string): Promise<DigitalCheckR
     recommendedActions: scan.recommendations.map((r) => r.title),
     businessImpactSummary:
       scan.businessImpactSummary ?? `Punteggio complessivo: ${scan.overallScore}/100 (${scoreLabel(scan.overallScore)}).`,
-    aiAnalysis: null,
+    aiAnalysis,
     unverifiable: scan.unverifiable,
   };
 }

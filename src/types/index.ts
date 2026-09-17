@@ -123,4 +123,11 @@ export interface DigitalCheckReport {
   businessImpactSummary: string;
   aiAnalysis: AiAnalysis | null;
   unverifiable: string[]; // elenco esplicito di cio' che non e' stato possibile verificare
+
+  // Presenti solo quando il report e' stato troncato per il piano Free
+  // (vedi src/lib/billing/report-tiering.ts): permettono all'interfaccia
+  // di comunicare "ci sono altri N problemi" senza doverli inviare.
+  isFreePreview?: boolean;
+  hiddenIssueCount?: number;
+  hiddenRecommendationCount?: number;
 }
