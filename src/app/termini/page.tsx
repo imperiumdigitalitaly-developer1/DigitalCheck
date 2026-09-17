@@ -156,13 +156,12 @@ export default function TerminiPage() {
 
       <LegalSection title="13. Legge applicabile e foro competente">
         <p>
-          I presenti Termini sono regolati dalla legge italiana. Per qualsiasi controversia
-          relativa alla loro interpretazione o esecuzione sarà competente in via esclusiva il
-          Foro di Milano, salvo i casi in cui la legge preveda inderogabilmente un foro diverso
-          (ad es. per i consumatori, il foro di residenza del consumatore).
+          I presenti Termini sono regolati dalla legge italiana, salvo i casi in cui la legge
+          preveda inderogabilmente una disciplina diversa (ad es. per i consumatori, il foro di
+          residenza del consumatore).
         </p>
-        <p>
-          <DefaultNote>Foro provvisorio, da confermare in base alla sede legale definitiva.</DefaultNote>
+        <p className="text-sm">
+          Foro competente: dati societari in fase di definizione — aggiornamento a breve.
         </p>
       </LegalSection>
 
