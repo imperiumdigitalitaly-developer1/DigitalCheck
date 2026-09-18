@@ -76,7 +76,7 @@ async function callUptimeRobot(
   method: string,
   apiKey: string,
   params: Record<string, string>
-): Promise<{ ok: true; data: UptimeRobotOkResponse } | { ok: false; error: string }> {
+): Promise<{ ok: true; data: UptimeRobotOkResponse } | { ok: false; error: string; errorType?: string }> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE}/${method}`, {
@@ -98,7 +98,11 @@ async function callUptimeRobot(
     return { ok: false, error: `UptimeRobot ha risposto con status ${response.status} (corpo non leggibile)` };
   }
   if (body.stat !== "ok") {
-    return { ok: false, error: body.error?.message ?? `UptimeRobot ha rifiutato la richiesta (${method})` };
+    return {
+      ok: false,
+      error: body.error?.message ?? `UptimeRobot ha rifiutato la richiesta (${method})`,
+      errorType: body.error?.type,
+    };
   }
   return { ok: true, data: body };
 }
@@ -153,6 +157,11 @@ export async function deleteMonitor(monitorId: string): Promise<{ ok: true } | {
 
   const result = await callUptimeRobot("deleteMonitor", apiKey, { id: monitorId });
   if (!result.ok) {
+    // Un monitor gia' inesistente (rimosso a mano su UptimeRobot) va trattato
+    // come eliminato: l'obiettivo, che non ne resti uno orfano, e' raggiunto.
+    if (result.errorType === "not_found" || /not\s+found|does\s+not\s+exist/i.test(result.error)) {
+      return { ok: true };
+    }
     logProviderError("deleteMonitor", result.error);
     return { ok: false, error: "Impossibile eliminare il monitor di uptime al momento." };
   }

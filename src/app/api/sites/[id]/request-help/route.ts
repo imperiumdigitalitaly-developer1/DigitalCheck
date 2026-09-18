@@ -48,6 +48,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   await prisma.notification.create({
     data: {
       userId: session.userId,
+      siteId: site.id,
       type: "help_request",
       message: mailResult.sent
         ? `Richiesta di intervento inviata per ${site.url}.`

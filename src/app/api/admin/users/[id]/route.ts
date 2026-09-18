@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { cancelSubscriptionImmediately } from "@/lib/billing/stripe";
+import { deleteUserWithTeardown } from "@/lib/gestionale/site-teardown";
 
 const patchSchema = z.object({
   plan: z.enum(["FREE", "PRO"]),
@@ -75,7 +76,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   // Cascade a livello DB (vedi schema.prisma) rimuove automaticamente:
   // organizzazioni possedute, siti, scan, report, subscription,
   // notifiche, connessioni Analytics/Search Console, conversazioni AI.
-  await prisma.user.delete({ where: { id: params.id } });
+  // I monitor UptimeRobot e i grant Google dei suoi siti vivono fuori dal DB:
+  // li gestisce deleteUserWithTeardown.
+  await deleteUserWithTeardown(params.id);
 
   console.log(
     JSON.stringify({

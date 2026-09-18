@@ -96,21 +96,21 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    loadStats();
-  }, [loadStats]);
-
-  useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((data) => setMe(data.user ?? null))
       .catch(() => setMe(null));
   }, []);
 
+  // Ogni volta che si apre una tab i dati vengono riletti dal server: prima
+  // venivano caricati solo la prima volta, quindi con la pagina aperta si
+  // continuavano a vedere siti e utenti eliminati nel frattempo.
   useEffect(() => {
-    if (tab === "users" && !users) loadUsers();
-    if (tab === "sites" && !sites) loadSites();
-    if (tab === "limits" && !limits) loadLimits();
-  }, [tab, users, sites, limits, loadUsers, loadSites, loadLimits]);
+    if (tab === "overview") loadStats();
+    if (tab === "users") loadUsers();
+    if (tab === "sites") loadSites();
+    if (tab === "limits") loadLimits();
+  }, [tab, loadStats, loadUsers, loadSites, loadLimits]);
 
   async function handleChangePlan(userId: string, plan: "FREE" | "PRO") {
     setPlanError(null);

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { createMonitor, deleteMonitor, getMonitorSnapshot, type MonitorSnapshot } from "@/lib/integrations/uptimerobot";
+import { createMonitor, getMonitorSnapshot, type MonitorSnapshot } from "@/lib/integrations/uptimerobot";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -51,17 +51,3 @@ export async function provisionMonitorForSite(
   return result;
 }
 
-/**
- * Elimina il monitor corrispondente su UptimeRobot prima che il sito
- * (e la sua MonitoringConfig, via cascade) vengano rimossi dal DB —
- * altrimenti il monitor resterebbe orfano e continuerebbe a consumare la
- * quota dell'account UptimeRobot. Best-effort: un fallimento viene
- * loggato ma non deve impedire l'eliminazione del sito, che l'utente ha
- * gia' richiesto esplicitamente.
- */
-export async function deprovisionMonitorForSite(monitorId: string): Promise<void> {
-  const result = await deleteMonitor(monitorId);
-  if (!result.ok) {
-    console.error(`[observability] impossibile eliminare il monitor UptimeRobot ${monitorId}: ${result.error}`);
-  }
-}

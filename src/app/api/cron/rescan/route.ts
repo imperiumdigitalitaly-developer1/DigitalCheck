@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { persistScanForSite } from "@/lib/pipeline/persist-scan";
+import { retryPendingMonitorCleanups } from "@/lib/gestionale/site-teardown";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // scan multipli possono richiedere tempo
@@ -22,6 +23,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Non autorizzato" }, { status: 401 });
   }
 
+  // Riprova a eliminare da UptimeRobot i monitor di siti gia' eliminati che
+  // non era stato possibile ripulire subito. Mai bloccante per le scansioni.
+  const monitorCleanup = await retryPendingMonitorCleanups().catch((err) => {
+    console.error("[cron] pulizia monitor non riuscita:", err instanceof Error ? err.message : err);
+    return null;
+  });
+
   const dueSites = await prisma.site.findMany({
     where: { monitoringEnabled: true, nextScanAt: { lte: new Date() } },
     include: { owner: true },
@@ -36,5 +44,5 @@ export async function GET(request: NextRequest) {
     results.push({ siteId: site.id, ok: result.ok });
   }
 
-  return NextResponse.json({ processed: results.length, results });
+  return NextResponse.json({ processed: results.length, results, monitorCleanup });
 }

@@ -177,3 +177,25 @@ export async function refreshGoogleAccessToken(params: {
     };
   }
 }
+
+/**
+ * Revoca su Google il grant OAuth (refresh token, o access token se manca il
+ * refresh): l'app sparisce dai permessi dell'account Google del cliente.
+ * Best effort, usata all'eliminazione di un sito. Un token gia' revocato o
+ * scaduto (Google risponde 400) conta come successo: l'accesso e' comunque
+ * chiuso. Il token non viene mai scritto nei log.
+ */
+export async function revokeGoogleToken(token: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const response = await fetch("https://oauth2.googleapis.com/revoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token }),
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (response.ok || response.status === 400) return { ok: true };
+    return { ok: false, error: `Google ha risposto con status ${response.status}` };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Errore di rete verso Google" };
+  }
+}

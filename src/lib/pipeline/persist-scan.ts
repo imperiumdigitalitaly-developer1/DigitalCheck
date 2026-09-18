@@ -104,6 +104,7 @@ export async function persistScanForSite(site: Site, owner: User): Promise<Persi
         await prisma.notification.create({
           data: {
             userId: site.ownerId,
+            siteId: site.id,
             type: "score_change",
             message: `Il Digital Score di ${site.url} e' passato da ${previousScan.overallScore} a ${result.report.overallScore}.`,
           },
@@ -116,6 +117,7 @@ export async function persistScanForSite(site: Site, owner: User): Promise<Persi
       await prisma.notification.create({
         data: {
           userId: site.ownerId,
+          siteId: site.id,
           type: "issues_found",
           message: `Rilevati ${highSeverityCount} problemi ad alta priorita' su ${site.url}.`,
         },

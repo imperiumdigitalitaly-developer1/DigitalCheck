@@ -124,6 +124,7 @@ model Site {
   searchConsoleConnection SearchConsoleConnection?
   monitoringConfig        MonitoringConfig?
   aiConversations         AIConversation[]
+  notifications           Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -244,12 +245,17 @@ model Notification {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Sito a cui si riferisce la notifica: eliminando il sito spariscono anche
+  // le sue notifiche. Null solo per notifiche non legate a un sito.
+  siteId    String?
+  site      Site?    @relation(fields: [siteId], references: [id], onDelete: Cascade)
   type      String
   message   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([siteId])
 }
 
 // ---------------------------------------------------------------------
@@ -317,6 +323,20 @@ model MonitoringConfig {
   // campo e' valorizzato (il monitor esiste davvero sul provider).
   monitorId  String?
   updatedAt  DateTime @updatedAt
+}
+
+// Monitor UptimeRobot di siti (o utenti) eliminati che non e' stato possibile
+// eliminare sul provider al momento dell'eliminazione: il cron giornaliero
+// riprova (vedi src/lib/gestionale/site-teardown.ts). Deliberatamente NON
+// collegato a Site/User: deve sopravvivere alla loro eliminazione, altrimenti
+// il monitor resterebbe orfano sul provider senza modo di ripulirlo.
+model MonitorCleanup {
+  id        String   @id @default(cuid())
+  monitorId String   @unique
+  attempts  Int      @default(0)
+  lastError String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Storico della conversazione con l'assistente AI per sito (piano Pro):
