@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/DashboardShell";
 
+const SUPPORT_EMAIL = "imperiumdigitalitaly@gmail.com";
+
 interface MeUser {
   id: string;
   email: string;
@@ -90,6 +92,19 @@ export default function SettingsPage() {
           </button>
         )}
         {portalMessage && <p className="text-sm text-ink-soft">{portalMessage}</p>}
+      </section>
+
+      <section className="mt-6 max-w-lg space-y-3 rounded-lg border border-line bg-white p-6">
+        <h2 className="font-display text-lg">Assistenza</h2>
+        <p className="text-sm text-ink-soft">
+          Per qualsiasi problema o domanda su DigitalCheck, scrivici: ti rispondiamo via email.
+        </p>
+        <a
+          href={`mailto:${SUPPORT_EMAIL}`}
+          className="tap-target -mx-1 break-all px-1 text-sm font-medium text-accent hover:underline"
+        >
+          {SUPPORT_EMAIL}
+        </a>
       </section>
 
       <section className="mt-6 max-w-lg rounded-lg border border-line bg-white p-6">
