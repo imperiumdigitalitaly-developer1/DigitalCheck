@@ -307,7 +307,6 @@ export default function HomePage() {
                 <li className="flex gap-2"><span className="text-accent">✓</span> Gestionale</li>
                 <li className="flex gap-2"><span className="text-accent">✓</span> Web Analytics</li>
                 <li className="flex gap-2"><span className="text-accent">✓</span> Metrics</li>
-                <li className="flex gap-2"><span className="text-accent">✓</span> Observability</li>
                 <li className="flex gap-2"><span className="text-accent">✓</span> Monitoraggio</li>
                 <li className="flex gap-2"><span className="text-accent">✓</span> Grafici e report</li>
                 <li className="flex gap-2"><span className="text-accent">✓</span> Insight AI</li>
