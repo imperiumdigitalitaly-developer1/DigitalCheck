@@ -314,13 +314,14 @@ copiare in `.env.local`.
 | Resend (o altro provider email) | Verifica email, reset password | `RESEND_API_KEY`, `EMAIL_FROM` | opzionale (link mostrato in dev) |
 | Scheduler (Vercel Cron o esterno) | Monitoraggio periodico | `CRON_SECRET` | richiesto per il cron |
 | Google Analytics Data API (OAuth) | Tab "Web Analytics" del Gestionale | `GOOGLE_ANALYTICS_CLIENT_ID/SECRET` | implementato — OAuth per singolo sito, scelta della proprieta' GA4 e dati reali (utenti, sessioni, sorgenti, pagine; ultimi 28 giorni, cache di 5 minuti). Richiede le API Google Analytics Admin e Google Analytics Data abilitate nel progetto Google Cloud |
-| Google Search Console API (OAuth) | Tab "Search Console" del Gestionale | `GOOGLE_SEARCH_CONSOLE_CLIENT_ID/SECRET` | **non implementato**: schema pronto (`SearchConsoleConnection`) |
+| Google Search Console API (OAuth) | Tab "Search Console" del Gestionale | `GOOGLE_SEARCH_CONSOLE_CLIENT_ID/SECRET` | implementato — OAuth per singolo sito, scelta della proprieta' verificata e dati reali (click, impression, CTR, posizione media, query e pagine principali; ultimi 28 giorni, cache di 5 minuti) |
 | UptimeRobot (API v2) | Tab "Observability" del Gestionale | `UPTIMEROBOT_API_KEY` | implementato — creazione/eliminazione automatica del monitor, stato letto in tempo reale con cache di 5 minuti |
 
-Finche' Google Analytics e Search Console non vengono collegati (OAuth da
-configurare), il Gestionale mostra sempre esplicitamente "Connessione
-richiesta" — mai dati finti (brief, sezioni 17, 20, 45). Lo stesso vale
-per Observability se `UPTIMEROBOT_API_KEY` non e' configurata.
+Finche' Google Analytics e Search Console non vengono collegati (credenziali
+OAuth non configurate o account del cliente non ancora collegato), il
+Gestionale mostra sempre esplicitamente "Connessione richiesta" — mai dati
+finti (brief, sezioni 17, 20, 45). Lo stesso vale per Observability se
+`UPTIMEROBOT_API_KEY` non e' configurata.
 
 ## 15. Stima qualitativa dei costi operativi
 
@@ -366,10 +367,6 @@ deploy.
 
 ## 17. Cosa manca ancora (oltre ai test sopra)
 
-- Integrazione OAuth reale di Google Analytics e Google Search Console
-  nel Gestionale (schema DB pronto — `AnalyticsConnection`,
-  `SearchConsoleConnection` — ma il flusso di collegamento account non e'
-  implementato: richiede credenziali OAuth Google, vedi `.env.example`)
 - Pagina pubblica di visualizzazione del report condiviso (oggi il link
   pubblico serve direttamente il PDF, non una pagina HTML col branding)
 - Flusso di invito/promozione a admin (oggi va fatto a mano sul database)
