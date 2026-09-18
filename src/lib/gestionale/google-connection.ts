@@ -20,7 +20,7 @@ export type ValidTokenResult =
 
 /**
  * Restituisce un access token Google valido, rinnovandolo se necessario.
- * Condivisa da Search Console e (in seguito) Analytics: la differenza tra
+ * Condivisa da Search Console e Analytics: la differenza tra
  * le due integrazioni e' solo QUALE riga di connessione leggere/scrivere,
  * passata qui tramite le due funzioni onRefreshed/onReauthRequired cosi'
  * questa funzione non deve conoscere Prisma ne' i due modelli diversi.
@@ -86,6 +86,23 @@ export async function getValidSearchConsoleToken(siteId: string): Promise<ValidT
     },
     async () => {
       await prisma.searchConsoleConnection.update({ where: { siteId }, data: { connected: false } });
+    }
+  );
+}
+
+/** Access token valido per Google Analytics, con refresh e persistenza automatici. */
+export async function getValidAnalyticsToken(siteId: string): Promise<ValidTokenResult> {
+  const connection = await prisma.analyticsConnection.findUnique({ where: { siteId } });
+  if (!connection) return { ok: false, error: "Google Analytics non collegato per questo sito.", reauthRequired: true };
+
+  return resolveGoogleAccessToken(
+    "analytics",
+    connection,
+    async (accessToken, accessTokenExpiresAt) => {
+      await prisma.analyticsConnection.update({ where: { siteId }, data: { accessToken, accessTokenExpiresAt } });
+    },
+    async () => {
+      await prisma.analyticsConnection.update({ where: { siteId }, data: { connected: false } });
     }
   );
 }

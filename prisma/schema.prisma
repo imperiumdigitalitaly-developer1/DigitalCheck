@@ -262,22 +262,31 @@ model Notification {
 // ---------------------------------------------------------------------
 
 model AnalyticsConnection {
-  id           String    @id @default(cuid())
-  siteId       String    @unique
-  site         Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  connected    Boolean   @default(false)
-  propertyId   String?
-  accessToken  String?
-  refreshToken String?
-  connectedAt  DateTime?
-  updatedAt    DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  siteId               String    @unique
+  site                 Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  connected            Boolean   @default(false)
+  // Proprieta' GA4 scelta dall'utente (solo l'id numerico, senza il prefisso
+  // "properties/") tra quelle restituite da accountSummaries — vedi
+  // src/lib/gestionale/analytics.ts. null finche' non viene scelta.
+  propertyId           String?
+  // Nome leggibile della proprieta', salvato alla scelta: l'id numerico da
+  // solo non dice nulla a un cliente non tecnico.
+  propertyName         String?
+  accessToken          String?
+  refreshToken         String?
+  // Scadenza dell'accessToken corrente, per il refresh proattivo condiviso
+  // con Search Console (vedi resolveGoogleAccessToken).
+  accessTokenExpiresAt DateTime?
+  connectedAt          DateTime?
+  updatedAt            DateTime  @updatedAt
 }
 
 model SearchConsoleConnection {
-  id           String    @id @default(cuid())
-  siteId       String    @unique
-  site         Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  connected    Boolean   @default(false)
+  id                   String    @id @default(cuid())
+  siteId               String    @unique
+  site                 Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  connected            Boolean   @default(false)
   // Proprieta' Search Console scelta dall'utente tra quelle restituite da
   // sites.list (un account puo' averne piu' di una) — vedi
   // src/lib/gestionale/search-console.ts. null finche' non viene scelta:

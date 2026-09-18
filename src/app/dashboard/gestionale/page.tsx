@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { UpgradeCard } from "@/components/UpgradeCard";
 import { StatusBadge, MonitorStatusBadge } from "@/components/StatusBadge";
 import { ScoreTrendChart } from "@/components/ScoreTrendChart";
+import { AnalyticsPanel } from "@/components/AnalyticsPanel";
 import { SearchConsolePanel } from "@/components/SearchConsolePanel";
 import { CATEGORY_LABELS } from "@/lib/category-labels";
 
@@ -376,15 +377,16 @@ function GestionaleView() {
       )}
 
       {tab === "analytics" && (
-        <div className="mt-6 max-w-xl rounded-lg border border-line bg-white p-6">
+        <div className="mt-6 max-w-3xl rounded-lg border border-line bg-white p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg">Web Analytics</h2>
             <StatusBadge status={connections?.analytics.connected ? "connected" : "not_connected"} />
           </div>
           {connections?.analytics.connected ? (
-            <p className="mt-3 text-sm text-ink-soft">
-              Utenti, sessioni, sorgenti di traffico e pagine principali comparirebbero qui.
-            </p>
+            <AnalyticsPanel
+              siteId={selectedSiteId}
+              connectHref={`/api/gestionale/connections/analytics/connect?siteId=${selectedSiteId}`}
+            />
           ) : connections?.analytics.configured ? (
             <>
               <p className="mt-3 text-sm text-ink-soft">Google Analytics non collegato per questo sito.</p>

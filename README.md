@@ -313,7 +313,7 @@ copiare in `.env.local`.
 | Stripe | Abbonamento Pro (checkout + portale) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO` | opzionale (errore esplicito se assente) |
 | Resend (o altro provider email) | Verifica email, reset password | `RESEND_API_KEY`, `EMAIL_FROM` | opzionale (link mostrato in dev) |
 | Scheduler (Vercel Cron o esterno) | Monitoraggio periodico | `CRON_SECRET` | richiesto per il cron |
-| Google Analytics Data API (OAuth) | Tab "Web Analytics" del Gestionale | `GOOGLE_ANALYTICS_CLIENT_ID/SECRET` | **non implementato**: schema pronto (`AnalyticsConnection`), OAuth da collegare |
+| Google Analytics Data API (OAuth) | Tab "Web Analytics" del Gestionale | `GOOGLE_ANALYTICS_CLIENT_ID/SECRET` | implementato — OAuth per singolo sito, scelta della proprieta' GA4 e dati reali (utenti, sessioni, sorgenti, pagine; ultimi 28 giorni, cache di 5 minuti). Richiede le API Google Analytics Admin e Google Analytics Data abilitate nel progetto Google Cloud |
 | Google Search Console API (OAuth) | Tab "Search Console" del Gestionale | `GOOGLE_SEARCH_CONSOLE_CLIENT_ID/SECRET` | **non implementato**: schema pronto (`SearchConsoleConnection`) |
 | UptimeRobot (API v2) | Tab "Observability" del Gestionale | `UPTIMEROBOT_API_KEY` | implementato — creazione/eliminazione automatica del monitor, stato letto in tempo reale con cache di 5 minuti |
 
