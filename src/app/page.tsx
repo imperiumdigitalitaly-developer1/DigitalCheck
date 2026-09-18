@@ -1,20 +1,26 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function HomePage() {
   return (
     <main>
-      <nav className="flex items-center justify-between border-b border-line px-6 py-4">
-        <div className="flex items-baseline gap-2">
-          <span className="font-display text-lg">DigitalCheck</span>
-          <span className="text-xs text-ink-soft">powered by Imperium Digital</span>
-        </div>
-        <div className="flex items-center gap-4 text-sm">
-          <Link href="/login" className="text-ink-soft hover:text-ink">
+      {/* Sotto sm il blocco delle azioni va a capo sotto il marchio invece di
+          comprimersi: marchio e azioni non si toccano mai. */}
+      <nav className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3 sm:px-6 sm:py-4">
+        <Link href="/" className="flex min-w-0 flex-col gap-1">
+          <span className="flex items-center gap-2.5">
+            <Image src="/logo-transparent.png" alt="" width={52} height={32} priority className="shrink-0" />
+            <span className="font-display text-xl leading-none">DigitalCheck</span>
+          </span>
+          <span className="text-[11px] leading-none text-ink-soft">powered by Imperium Digital</span>
+        </Link>
+        <div className="ml-auto flex items-center gap-1 text-sm">
+          <Link href="/login" className="inline-flex min-h-[44px] items-center px-3 text-ink-soft hover:text-ink">
             Accedi
           </Link>
           <Link
             href="/register"
-            className="rounded-md bg-ink px-4 py-2 font-medium text-paper hover:bg-ink/90"
+            className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-md bg-ink px-4 font-medium text-paper hover:bg-ink/90"
           >
             Crea account
           </Link>
@@ -48,8 +54,8 @@ export default function HomePage() {
           <h2 className="font-display text-3xl">Come funziona</h2>
           <div className="mt-8 grid grid-cols-1 gap-8 sm:grid-cols-3">
             {[
-              { title: "1. Inserisci il sito", text: "Indica l'indirizzo del tuo sito, il tipo di attivita' e il tuo obiettivo principale." },
-              { title: "2. Analisi automatica", text: "Il sistema esamina SEO, aspetti tecnici, mobile, contenuti e capacita' di conversione." },
+              { title: "1. Crea un account gratuito", text: "Clicca su \"Crea un account gratuito per analizzare il tuo sito\" e registrati con la tua email." },
+              { title: "2. Analizza il tuo sito", text: "Dalla dashboard scegli \"Analizza sito\" e indica l'indirizzo, il tipo di attivita' e il tuo obiettivo principale: il sistema esamina SEO, aspetti tecnici, mobile, contenuti e capacita' di conversione." },
               { title: "3. Report con azioni concrete", text: "Ricevi un Digital Score e indicazioni pratiche, spiegate in linguaggio semplice." },
             ].map((step) => (
               <div key={step.title}>
