@@ -3,6 +3,7 @@ import { analyzeSeoFacts } from "@/lib/analysis/seo-analyzer";
 import { computeScoring, type ScoringOutput } from "@/lib/scoring/scoring-engine";
 import { scoreLabel } from "@/lib/scoring/weights";
 import { runContentAnalysis } from "@/lib/ai/content-analyzer";
+import type { GeminiPriority } from "@/lib/ai/gemini-client";
 import type { BusinessGoal, BusinessType, CrawlResult, DigitalCheckReport, SeoFacts } from "@/types";
 
 export interface ScanPipelineSuccess {
@@ -25,7 +26,8 @@ export async function runScanPipeline(
   url: string,
   businessType: BusinessType,
   goal: BusinessGoal,
-  maxPages: number
+  maxPages: number,
+  options: { aiPriority?: GeminiPriority } = {}
 ): Promise<ScanPipelineResult> {
   const crawl = await crawlSite(url, { maxPages });
 
@@ -47,7 +49,8 @@ export async function runScanPipeline(
     facts,
     crawl,
     businessType,
-    goal
+    goal,
+    { priority: options.aiPriority }
   );
 
   const unverifiable = [...scoring.unverifiable];

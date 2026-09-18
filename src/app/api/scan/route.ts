@@ -71,7 +71,9 @@ export async function POST(request: NextRequest) {
   const { url, businessType, goal } = parsed.data;
   const maxPages = Number(process.env.SCAN_MAX_PAGES_FREE ?? 5);
 
-  const result = await runScanPipeline(url, businessType, goal, maxPages);
+  // Widget pubblico non autenticato: priorita' bassa sulla quota Gemini
+  // condivisa, cosi' non toglie spazio ad AI Assistant e Report/PDF.
+  const result = await runScanPipeline(url, businessType, goal, maxPages, { aiPriority: "low" });
 
   if (!result.ok) {
     return NextResponse.json(
