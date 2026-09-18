@@ -103,6 +103,16 @@ async function callUptimeRobot(
   return { ok: true, data: body };
 }
 
+/**
+ * Il messaggio grezzo di UptimeRobot (in inglese, es. "You are not allowed
+ * to use some settings with your current plan") non deve mai arrivare al
+ * cliente: lo si logga qui per il debug e si restituisce un messaggio
+ * onesto ma comprensibile in italiano al chiamante.
+ */
+function logProviderError(operation: string, rawError: string) {
+  console.error(`[uptimerobot] ${operation} fallita: ${rawError}`);
+}
+
 /** Crea un monitor HTTP(s) su UptimeRobot per l'URL indicato. */
 export async function createMonitor(
   url: string,
@@ -111,16 +121,28 @@ export async function createMonitor(
   const apiKey = getUptimeRobotApiKey();
   if (!apiKey) return { ok: false, error: "UPTIMEROBOT_API_KEY non configurata" };
 
+  // Parametri ridotti al minimo indispensabile — monitor HTTP(s) semplice,
+  // nessun alert_contact, nessuna opzione avanzata. Niente `interval`:
+  // sui piani free piu' recenti di UptimeRobot anche un valore "sicuro"
+  // come 300s puo' essere rifiutato con "You are not allowed to use some
+  // settings with your current plan" perche' l'intervallo personalizzato
+  // via API e' riservato al piano Pro di UptimeRobot — omettendolo,
+  // UptimeRobot applica l'intervallo di default consentito dall'account.
   const result = await callUptimeRobot("newMonitor", apiKey, {
     type: "1", // HTTP(s)
     url,
     friendly_name: friendlyName,
-    interval: "300", // 5 minuti: il minimo consentito dal piano free di UptimeRobot
   });
-  if (!result.ok) return result;
+  if (!result.ok) {
+    logProviderError("newMonitor", result.error);
+    return { ok: false, error: "Impossibile configurare il monitoring al momento, riprova piu' tardi." };
+  }
 
   const monitor = result.data.monitor as { id?: number } | undefined;
-  if (!monitor?.id) return { ok: false, error: "UptimeRobot non ha restituito l'ID del monitor creato" };
+  if (!monitor?.id) {
+    logProviderError("newMonitor", "risposta priva di monitor.id nonostante stat=ok");
+    return { ok: false, error: "Impossibile configurare il monitoring al momento, riprova piu' tardi." };
+  }
   return { ok: true, monitorId: String(monitor.id) };
 }
 
@@ -130,7 +152,10 @@ export async function deleteMonitor(monitorId: string): Promise<{ ok: true } | {
   if (!apiKey) return { ok: false, error: "UPTIMEROBOT_API_KEY non configurata" };
 
   const result = await callUptimeRobot("deleteMonitor", apiKey, { id: monitorId });
-  if (!result.ok) return result;
+  if (!result.ok) {
+    logProviderError("deleteMonitor", result.error);
+    return { ok: false, error: "Impossibile eliminare il monitor di uptime al momento." };
+  }
   return { ok: true };
 }
 
@@ -149,7 +174,10 @@ export async function getMonitorSnapshot(
     logs_limit: "5",
     custom_uptime_ratios: "30",
   });
-  if (!result.ok) return result;
+  if (!result.ok) {
+    logProviderError("getMonitors", result.error);
+    return { ok: false, error: "Impossibile leggere lo stato del monitoring al momento, riprova piu' tardi." };
+  }
 
   const monitors = result.data.monitors as
     | {
