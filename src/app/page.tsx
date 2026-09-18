@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { DigitalCheckReport } from "@/types";
-import { ReportView } from "@/components/ReportView";
+import { useRouter } from "next/navigation";
 
 const BUSINESS_TYPES = [
   { value: "bnb", label: "B&B / Casa vacanze" },
@@ -23,40 +22,30 @@ const GOALS = [
   { value: "increase_contacts", label: "Ottenere piu' contatti" },
 ] as const;
 
-type Status = "idle" | "loading" | "error" | "done";
-
 export default function HomePage() {
+  const router = useRouter();
+  // I campi del modulo non vengono inviati da nessuna parte: l'analisi si
+  // avvia solo da un account (vedi goToAnalysis).
   const [url, setUrl] = useState("");
   const [businessType, setBusinessType] = useState<(typeof BUSINESS_TYPES)[number]["value"]>("bnb");
   const [goal, setGoal] = useState<(typeof GOALS)[number]["value"]>("increase_bookings");
-  const [status, setStatus] = useState<Status>("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [report, setReport] = useState<DigitalCheckReport | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setStatus("loading");
-    setError(null);
-    setReport(null);
-
+  // Ogni analisi richiede un account: da qui non se ne esegue nessuna.
+  // Chi e' gia' autenticato va alla pagina di analisi della dashboard,
+  // tutti gli altri alla registrazione.
+  async function goToAnalysis() {
     try {
-      const response = await fetch("/api/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, businessType, goal }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data.error ?? "Si e' verificato un errore durante l'analisi.");
-        setStatus("error");
-        return;
-      }
-      setReport(data as DigitalCheckReport);
-      setStatus("done");
+      const response = await fetch("/api/auth/me");
+      const data = response.ok ? await response.json() : null;
+      router.push(data?.user ? "/dashboard/analyze" : "/register");
     } catch {
-      setError("Non e' stato possibile completare l'analisi. Riprova tra poco.");
-      setStatus("error");
+      router.push("/register");
     }
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    void goToAnalysis();
   }
 
   return (
@@ -98,7 +87,6 @@ export default function HomePage() {
             <input
               id="url"
               type="text"
-              required
               placeholder="Inserisci il tuo sito web (es. www.tuosito.it)"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -144,35 +132,14 @@ export default function HomePage() {
 
             <button
               type="submit"
-              disabled={status === "loading"}
-              className="w-full rounded-md bg-accent px-6 py-3 font-medium text-paper transition-colors hover:bg-accent-deep disabled:opacity-60"
+              className="w-full rounded-md bg-accent px-6 py-3 font-medium text-paper transition-colors hover:bg-accent-deep"
             >
-              {status === "loading" ? "Analisi in corso..." : "Analizza gratuitamente"}
+              Analizza gratuitamente
             </button>
-
-            {status === "loading" && (
-              <p className="text-center text-sm text-ink-soft" role="status">
-                Stiamo raggiungendo il sito e analizzando homepage, SEO e struttura tecnica. Puo'
-                richiedere qualche secondo.
-              </p>
-            )}
-            {status === "error" && error && (
-              <p className="text-center text-sm text-severity-high" role="alert">
-                {error}
-              </p>
-            )}
+            <p className="text-center text-sm text-ink-soft">Per avviare l&apos;analisi serve un account gratuito.</p>
           </form>
         </div>
       </section>
-
-      {/* RESULTS */}
-      {status === "done" && report && (
-        <section className="border-b border-line px-6 py-16">
-          <div className="mx-auto max-w-4xl">
-            <ReportView report={report} plan="FREE" />
-          </div>
-        </section>
-      )}
 
       {/* COME FUNZIONA */}
       <section className="border-b border-line px-6 py-16">
@@ -355,7 +322,11 @@ export default function HomePage() {
       <section className="border-b border-line px-6 py-16 text-center" id="consulenza">
         <h2 className="font-display text-3xl">Pronto a scoprire il tuo Digital Score?</h2>
         <a
-          href="#url"
+          href="/register"
+          onClick={(e) => {
+            e.preventDefault();
+            void goToAnalysis();
+          }}
           className="mt-6 inline-block rounded-md bg-accent px-6 py-3 font-medium text-paper transition-colors hover:bg-accent-deep"
         >
           Analizza il mio sito

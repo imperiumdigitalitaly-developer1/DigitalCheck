@@ -2,7 +2,7 @@ import type { AiAnalysis, BusinessGoal, BusinessType, CrawlResult, SeoFacts } fr
 import { buildAiInput, buildSystemPrompt, buildUserPrompt } from "./prompts";
 import { parseAiAnalysis } from "./schema";
 import { createHash } from "crypto";
-import { callGemini, type GeminiPriority } from "./gemini-client";
+import { callGemini } from "./gemini-client";
 
 export interface ContentAnalysisResult {
   analysis: AiAnalysis | null;
@@ -26,8 +26,7 @@ export async function runContentAnalysis(
   facts: SeoFacts,
   crawl: CrawlResult,
   businessType: BusinessType,
-  goal: BusinessGoal,
-  options: { priority?: GeminiPriority } = {}
+  goal: BusinessGoal
 ): Promise<ContentAnalysisResult> {
   const payload = buildAiInput(facts, crawl, businessType, goal);
   const system = buildSystemPrompt();
@@ -40,7 +39,7 @@ export async function runContentAnalysis(
   const pending = inFlight.get(key);
   if (pending) return pending;
 
-  const promise = analyzeUncached(system, user, options.priority).then((result) => {
+  const promise = analyzeUncached(system, user).then((result) => {
     if (result.analysis) {
       if (analysisCache.size >= CACHE_MAX_ENTRIES) {
         const oldest = analysisCache.keys().next().value;
@@ -58,12 +57,8 @@ export async function runContentAnalysis(
   }
 }
 
-async function analyzeUncached(
-  system: string,
-  user: string,
-  priority: GeminiPriority | undefined
-): Promise<ContentAnalysisResult> {
-  const result = await callGemini(system, user, { timeoutMs: 20_000, priority, json: true });
+async function analyzeUncached(system: string, user: string): Promise<ContentAnalysisResult> {
+  const result = await callGemini(system, user, { timeoutMs: 20_000, json: true });
   if (!result.text) {
     // Loggato oltre a finire in scan.unverifiable: cosi' il motivo e'
     // visibile nei log del server senza passare dal database.

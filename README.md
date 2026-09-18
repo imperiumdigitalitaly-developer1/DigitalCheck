@@ -43,12 +43,15 @@ nella sezione 16, non fidarsi del solo fatto che il codice "sembra corretto".
 ## 1. Cosa fa il prodotto
 
 ```
-Landing page (pubblica, senza account)
-  → inserimento URL + tipo attivita' + obiettivo
-  → crawl sicuro + analisi SEO/tecnica + analisi AI + scoring
-  → report mostrato subito in pagina (nessuna persistenza: e' il "prova gratis")
+Landing page (pubblica)
+  → presenta il prodotto; "Analizza gratuitamente" / "Analizza il mio sito"
+    non eseguono nessuna analisi: portano alla registrazione (/register),
+    o alla pagina di analisi della dashboard se l'utente e' gia' autenticato
 
 Account autenticato
+  → ogni analisi richiede un account ed e' salvata e tracciata: nessuna
+    analisi anonima (vedi "Analizza sito" nella dashboard: piano Free con
+    limite settimanale, Pro con limite mensile)
   → aggiunta di uno o piu' siti alla dashboard
   → scan persistiti nel database, con storico e variazione punteggio
   → monitoraggio periodico opzionale (piano Pro) via cron
@@ -105,13 +108,13 @@ digitalcheck/
       mail/mailer.ts
       pdf/report-pdf.ts
     app/
-      page.tsx                 # landing pubblica + widget di analisi
+      page.tsx                 # landing pubblica (CTA verso la registrazione)
       login/, register/, reset-password/
       dashboard/page.tsx        # lista siti
       dashboard/site/[id]/page.tsx  # storico, monitoraggio, PDF, condivisione
       admin/page.tsx
       api/
-        scan/route.ts                   # scan pubblico, stateless
+        scan/route.ts                   # stub: 401 senza account, 410 con account
         sites/route.ts                  # lista/crea siti (autenticato)
         sites/[id]/route.ts              # dettaglio + PATCH monitoraggio + delete
         sites/[id]/scan/route.ts         # scan persistito
@@ -171,7 +174,7 @@ Registrazione, login, logout, verifica email, reset password — tutte in
 ## 6. Persistenza degli scan e monitoraggio
 
 `src/lib/pipeline/persist-scan.ts` e' il cuore di questa parte: esegue la
-pipeline di scan (`run-scan.ts`, la stessa usata dal widget pubblico),
+pipeline di scan (`run-scan.ts`),
 aggiorna lo stato dello `Scan` passo per passo
 (`REQUESTED → CRAWLING → SCORING → COMPLETED` o `FAILED`), scrive punteggi
 per categoria, problemi e raccomandazioni in una singola transazione, e
@@ -260,9 +263,9 @@ esiste un flusso di invito dedicato.
 - **Ownership**: ogni query su `Site`/`Scan` filtra per l'utente della
   sessione; un ID sbagliato o di un altro utente restituisce 404, non 403,
   per non confermarne l'esistenza.
-- **Rate limiting**: in-memory sia sullo scan pubblico sia sul login;
-  adeguato a un singolo processo, da sostituire con uno store condiviso
-  (Redis) in un deployment multi-istanza.
+- **Rate limiting**: in-memory sul login; adeguato a un singolo processo,
+  da sostituire con uno store condiviso (Redis) in un deployment
+  multi-istanza.
 - **Webhook Stripe**: firma verificata con `stripe.webhooks.constructEvent`
   prima di fidarsi del payload.
 - **Cron**: protetto da un segreto condiviso (`CRON_SECRET`), non
