@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { ProBadge } from "./StatusBadge";
 
@@ -19,6 +20,20 @@ const NAV_ITEMS = [
   { href: "/dashboard/reports", label: "Report", pro: false },
   { href: "/dashboard/settings", label: "Impostazioni", pro: false },
 ];
+
+/**
+ * Monogramma di public/logo.png. L'immagine e' quadrata con il disegno che
+ * occupa solo il 58% della larghezza: il riquadro 8:5 con scala 1.544 (=
+ * 1254 / 812 px di ritaglio) lo mostra a misura, centrato, senza
+ * modificare il file. `sizes` fa servire a next/image una versione piccola.
+ */
+function LogoMark({ className }: { className: string }) {
+  return (
+    <span className={`relative block shrink-0 overflow-hidden ${className}`}>
+      <Image src="/logo.png" alt="" fill sizes="96px" priority className="scale-[1.544] object-cover" />
+    </span>
+  );
+}
 
 function NavLinks({ user, pathname, onNavigate }: { user: DashboardUser; pathname: string; onNavigate?: () => void }) {
   return (
@@ -74,7 +89,8 @@ export function DashboardShell({ user, children }: { user: DashboardUser; childr
           schermo (es. telefono in landscape), scorre al suo interno. */}
       <div className="sticky top-0 z-40 lg:hidden">
         <header className="flex items-center justify-between border-b border-line bg-white px-4 py-2">
-          <Link href="/dashboard" className="flex min-h-[44px] items-center gap-1.5">
+          <Link href="/dashboard" className="flex min-h-[44px] items-center gap-2.5">
+            <LogoMark className="h-10 w-16" />
             <span className="font-display text-lg">DigitalCheck</span>
           </Link>
           <button
@@ -106,8 +122,11 @@ export function DashboardShell({ user, children }: { user: DashboardUser; childr
 
       <div className="mx-auto flex max-w-6xl">
         <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-line bg-white px-4 py-6 lg:flex">
-          <Link href="/dashboard" className="flex flex-col gap-0.5 px-3">
-            <span className="font-display text-xl">DigitalCheck</span>
+          <Link href="/dashboard" className="flex flex-col gap-1 px-3">
+            <span className="flex items-center gap-2.5">
+              <LogoMark className="h-9 w-14" />
+              <span className="font-display text-xl">DigitalCheck</span>
+            </span>
             <span className="text-[11px] text-ink-soft">powered by Imperium Digital</span>
           </Link>
 
