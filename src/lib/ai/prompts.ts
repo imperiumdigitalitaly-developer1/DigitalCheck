@@ -62,9 +62,12 @@ export function buildAiInput(
 
 export function buildSystemPrompt(): string {
   return [
-    "Sei un analista che interpreta dati tecnici di siti web per proprietari di piccole attivita' (B&B, ristoranti, negozi, professionisti) senza competenze tecniche.",
-    "Ricevi SOLO dati strutturati estratti automaticamente da un sito: non hai accesso al sito stesso, non puoi navigarlo, e non devi inventare informazioni che non ti vengono fornite.",
+    "Sei un analista che interpreta dati tecnici di siti web per proprietari di piccole attivita' (B&B, ristoranti, negozi, professionisti) senza competenze tecniche. Il tuo testo finisce in un report PDF che il cliente paga e conserva: deve leggersi come una vera consulenza, non come un riassunto automatico.",
+    "Ricevi SOLO dati strutturati estratti automaticamente da un sito: non hai accesso al sito stesso, non puoi navigarlo, e non devi inventare informazioni che non ti vengono fornite (traffico, conversioni, posizionamento Google, dati Analytics/Search Console, fatturato, backlink: se non sono nel payload, non esistono per te).",
     "Se un dato non ti e' stato fornito, non affermarlo: dillo esplicitamente come non disponibile.",
+    "Quando nel payload e' presente un dato concreto (lunghezza del titolo, presenza/assenza di meta description, numero di H1, segnali di contatto rilevati o assenti, numero di pagine analizzate), citalo esplicitamente invece di restare generico: 'la homepage non ha una meta description rilevata' e' utile, 'il sito potrebbe migliorare la SEO' non lo e'.",
+    "Evita frasi di riempimento intercambiabili tra un sito e l'altro (es. 'il sito potrebbe offrire una migliore esperienza utente'): ogni frase deve dipendere da cosa e' stato effettivamente osservato in QUESTO sito.",
+    "Non ripetere lo stesso concetto in summary, priorities, conversion_analysis e content_analysis: ogni campo ha uno scopo diverso (sintesi generale, azioni ordinate, lettura della conversione, lettura dei contenuti) e non deve limitarsi a riformulare gli altri.",
     "Rispondi ESCLUSIVAMENTE con un oggetto JSON valido conforme allo schema richiesto, senza testo introduttivo, senza markdown, senza backtick.",
     "Scrivi in italiano, in un linguaggio chiaro e pratico, orientato all'impatto per l'attivita' (non solo tecnico).",
   ].join(" ");
@@ -72,10 +75,10 @@ export function buildSystemPrompt(): string {
 
 export function buildUserPrompt(payload: AiInputPayload): string {
   const schemaHint = `{
-  "summary": string,
-  "strengths": string[] (max 3-5),
+  "summary": string (3-5 frasi al massimo: cosa funziona, il problema principale, quale area migliorare per prima — deve reggere anche da solo come sintesi one-page),
+  "strengths": string[] (max 3-5, specifici a questo sito, non generici),
   "issues": [{ "title": string, "category": "technical"|"ux"|"seo"|"content"|"conversion", "severity": "high"|"medium"|"low", "explanation": string, "recommendation": string }] (max 5),
-  "priorities": string[] (ordinate per importanza),
+  "priorities": string[] (ordinate per importanza, ciascuna un'azione concreta e specifica, non un tema generico),
   "conversion_analysis": string,
   "content_analysis": string
 }`;

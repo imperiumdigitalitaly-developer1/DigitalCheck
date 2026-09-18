@@ -38,7 +38,12 @@ export function getPlanFeatures(plan: PlanType): PlanFeatures {
   return PLAN_FEATURES[plan];
 }
 
-/** Quante analisi complete (non troncate) mostrare nell'anteprima Free. */
-export const FREE_PREVIEW_ISSUE_COUNT = 2;
+/**
+ * Quante analisi complete (non troncate) mostrare nell'anteprima Free.
+ * FREE_PREVIEW_ISSUE_COUNT = 3 per allinearsi alla sezione "Top 3
+ * priorita'" del PDF Free (vedi src/lib/pdf/report-pdf.ts) — stessa
+ * fonte usata anche dalla UI web, cosi' le due esperienze non divergono.
+ */
+export const FREE_PREVIEW_ISSUE_COUNT = 3;
 export const FREE_PREVIEW_STRENGTH_COUNT = 2;
 export const FREE_PREVIEW_ACTION_COUNT = 1;
