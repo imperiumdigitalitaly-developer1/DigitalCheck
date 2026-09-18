@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { buildReportFromScan } from "@/lib/pipeline/build-report-from-scan";
 import { toFreeReport } from "@/lib/billing/report-tiering";
+import { getPlanFeatures } from "@/lib/billing/plan-config";
 
 export const runtime = "nodejs";
 
@@ -34,6 +35,6 @@ export async function GET(
     return NextResponse.json({ error: "Il report non e' ancora disponibile per questo scan." }, { status: 409 });
   }
 
-  const report = user.plan === "FREE" ? toFreeReport(fullReport) : fullReport;
+  const report = getPlanFeatures(user.plan).fullReports ? fullReport : toFreeReport(fullReport);
   return NextResponse.json({ report, plan: user.plan });
 }

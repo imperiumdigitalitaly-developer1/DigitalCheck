@@ -269,7 +269,7 @@ export default function AnalyzeSitePage() {
               </button>
             </div>
           </div>
-          <ReportView report={report} onUpgrade={handleUpgrade} />
+          <ReportView report={report} plan={user?.plan ?? "FREE"} onUpgrade={handleUpgrade} />
         </div>
       )}
     </DashboardShell>

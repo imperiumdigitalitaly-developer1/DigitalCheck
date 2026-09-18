@@ -3,6 +3,7 @@ import type { CategoryKey, DigitalCheckReport, IssueSeverity } from "@/types";
 import { scoreLabel } from "@/lib/scoring/weights";
 import { CATEGORY_LABELS } from "@/lib/category-labels";
 import type { PlanType } from "@prisma/client";
+import { getPlanFeatures } from "@/lib/billing/plan-config";
 
 const MARGIN = 50;
 const PAGE_WIDTH = 595.28; // A4
@@ -383,5 +384,5 @@ export async function generateProReportPdf(report: DigitalCheckReport): Promise<
 }
 
 export async function generateReportPdf(report: DigitalCheckReport, plan: PlanType = "PRO"): Promise<Uint8Array> {
-  return plan === "PRO" ? generateProReportPdf(report) : generateFreeReportPdf(report);
+  return getPlanFeatures(plan).fullReports ? generateProReportPdf(report) : generateFreeReportPdf(report);
 }

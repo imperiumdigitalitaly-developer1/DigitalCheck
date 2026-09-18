@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { DashboardShell } from "@/components/DashboardShell";
 import { UpgradeCard } from "@/components/UpgradeCard";
 import { EmptyState } from "@/components/EmptyState";
+import { getPlanFeatures } from "@/lib/billing/plan-config";
 
 interface MeUser {
   id: string;
@@ -53,9 +54,11 @@ export default function AssistantPage() {
     setHistory(turns);
   }, []);
 
+  const aiEnabled = user ? getPlanFeatures(user.plan).ai : false;
+
   useEffect(() => {
-    if (user?.plan === "PRO" && selectedSiteId) loadHistory(selectedSiteId);
-  }, [selectedSiteId, user, loadHistory]);
+    if (aiEnabled && selectedSiteId) loadHistory(selectedSiteId);
+  }, [selectedSiteId, aiEnabled, loadHistory]);
 
   async function handleUpgrade() {
     const response = await fetch("/api/billing/checkout", { method: "POST" });
@@ -86,7 +89,7 @@ export default function AssistantPage() {
 
   if (loading || !user) return <div className="p-10 text-center text-ink-soft">Caricamento...</div>;
 
-  if (user.plan !== "PRO") {
+  if (!aiEnabled) {
     return (
       <DashboardShell user={user}>
         <h1 className="font-display text-2xl">DigitalCheck AI Assistant</h1>

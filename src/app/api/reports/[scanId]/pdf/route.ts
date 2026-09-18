@@ -4,6 +4,7 @@ import { getCurrentSession } from "@/lib/auth/session";
 import { buildReportFromScan } from "@/lib/pipeline/build-report-from-scan";
 import { generateReportPdf } from "@/lib/pdf/report-pdf";
 import { toFreeReport } from "@/lib/billing/report-tiering";
+import { getPlanFeatures } from "@/lib/billing/plan-config";
 
 export const runtime = "nodejs";
 
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest, { params }: { params: { scanId: 
   // sintetica per Free, report completo per Pro (brief sezioni 4 e 15) —
   // anche quando servito tramite link pubblico condiviso.
   const ownerPlan = scan.site.owner.plan;
-  const report = ownerPlan === "FREE" ? toFreeReport(fullReport) : fullReport;
+  const report = getPlanFeatures(ownerPlan).fullReports ? fullReport : toFreeReport(fullReport);
   const pdfBytes = await generateReportPdf(report, ownerPlan);
 
   return new NextResponse(Buffer.from(pdfBytes), {

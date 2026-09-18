@@ -6,6 +6,7 @@ import { ScoreCircle } from "./ScoreCircle";
 import { ConsultationModal } from "./ConsultationModal";
 import { UpgradeCard } from "./UpgradeCard";
 import { CATEGORY_LABELS } from "@/lib/category-labels";
+import { getPlanFeatures } from "@/lib/billing/plan-config";
 
 const SEVERITY_LABELS: Record<IssueSeverity, { label: string; className: string }> = {
   high: { label: "Priorita' alta", className: "bg-severity-high/10 text-severity-high border-severity-high/30" },
@@ -13,8 +14,21 @@ const SEVERITY_LABELS: Record<IssueSeverity, { label: string; className: string 
   low: { label: "Priorita' bassa", className: "bg-severity-low/10 text-severity-low border-severity-low/30" },
 };
 
-export function ReportView({ report, onUpgrade }: { report: DigitalCheckReport; onUpgrade?: () => void }) {
+export function ReportView({
+  report,
+  plan,
+  onUpgrade,
+}: {
+  report: DigitalCheckReport;
+  plan: "FREE" | "PRO";
+  onUpgrade?: () => void;
+}) {
   const [showConsultation, setShowConsultation] = useState(false);
+  // Fonte unica per capire se l'utente ha diritto all'Assistente AI: mai
+  // dedotto dal contenuto del report (che puo' mancare anche per un Pro,
+  // es. generazione AI fallita per quello scan specifico) — vedi
+  // src/lib/billing/plan-config.ts.
+  const aiEnabled = getPlanFeatures(plan).ai;
   const bySeverity = { high: [] as typeof report.issues, medium: [] as typeof report.issues, low: [] as typeof report.issues };
   for (const issue of report.issues) bySeverity[issue.severity].push(issue);
 
@@ -126,7 +140,15 @@ export function ReportView({ report, onUpgrade }: { report: DigitalCheckReport; 
       {/* AI Analysis */}
       <section>
         <h3 className="font-display text-xl">Analisi AI</h3>
-        {report.aiAnalysis && !report.isFreePreview ? (
+        {!aiEnabled ? (
+          <div className="mt-4">
+            <UpgradeCard
+              title="Assistente AI"
+              description="Analizza i risultati, interpreta le criticita' e ricevi indicazioni operative personalizzate, distinguendo sempre il dato osservato dall'interpretazione e dal suggerimento."
+              onCtaClick={onUpgrade}
+            />
+          </div>
+        ) : report.aiAnalysis ? (
           <div className="mt-4 space-y-4 rounded-lg border border-line bg-white p-6">
             {report.aiAnalysis.conversionAnalysis && (
               <div>
@@ -154,13 +176,12 @@ export function ReportView({ report, onUpgrade }: { report: DigitalCheckReport; 
             )}
           </div>
         ) : (
-          <div className="mt-4">
-            <UpgradeCard
-              title="Assistente AI"
-              description="Analizza i risultati, interpreta le criticita' e ricevi indicazioni operative personalizzate, distinguendo sempre il dato osservato dall'interpretazione e dal suggerimento."
-              onCtaClick={onUpgrade}
-            />
-          </div>
+          // Piano abilitato ma questa scansione non ha prodotto un'analisi
+          // AI (errore tecnico/timeout): mai il paywall in questo caso, il
+          // motivo e' gia' elencato in "Cosa non e' stato possibile verificare".
+          <p className="mt-4 text-sm text-ink-soft">
+            Analisi AI non disponibile per questa scansione. Riprova con una nuova analisi del sito.
+          </p>
         )}
       </section>
 

@@ -169,7 +169,7 @@ export default function HomePage() {
       {status === "done" && report && (
         <section className="border-b border-line px-6 py-16">
           <div className="mx-auto max-w-4xl">
-            <ReportView report={report} />
+            <ReportView report={report} plan="FREE" />
           </div>
         </section>
       )}

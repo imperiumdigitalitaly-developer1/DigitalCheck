@@ -5,6 +5,7 @@ import { getPlanLimits, countScansThisMonth, countScansThisWeek } from "@/lib/bi
 import { persistScanForSite } from "@/lib/pipeline/persist-scan";
 import { buildReportFromScan } from "@/lib/pipeline/build-report-from-scan";
 import { toFreeReport } from "@/lib/billing/report-tiering";
+import { getPlanFeatures } from "@/lib/billing/plan-config";
 
 export const runtime = "nodejs";
 
@@ -60,6 +61,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   // Un utente Free non deve poter ottenere il report completo anche
   // chiamando questa API direttamente: il troncamento avviene qui, non
   // solo nell'interfaccia (vedi brief sezione 30).
-  const report = fullReport && user.plan === "FREE" ? toFreeReport(fullReport) : fullReport;
+  const report = fullReport && !getPlanFeatures(user.plan).fullReports ? toFreeReport(fullReport) : fullReport;
   return NextResponse.json({ scanId: result.scanId, report, plan: user.plan });
 }

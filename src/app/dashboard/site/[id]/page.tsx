@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import type { DigitalCheckReport } from "@/types";
 import { ReportView } from "@/components/ReportView";
+import { getPlanFeatures } from "@/lib/billing/plan-config";
 
 interface ScanHistoryItem {
   id: string;
@@ -41,7 +42,8 @@ const PRO_FEATURES = [
 
 export default function SiteDetailPage({ params }: { params: { id: string } }) {
   const [site, setSite] = useState<SiteDetail | null>(null);
-  const [isPro, setIsPro] = useState(false);
+  const [plan, setPlan] = useState<"FREE" | "PRO">("FREE");
+  const isPro = getPlanFeatures(plan).ai;
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -70,9 +72,9 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
     else setError("Sito non trovato.");
     if (meRes.ok) {
       const me = await meRes.json();
-      const pro = me.user?.plan === "PRO";
-      setIsPro(pro);
-      if (pro) {
+      const userPlan: "FREE" | "PRO" = me.user?.plan === "PRO" ? "PRO" : "FREE";
+      setPlan(userPlan);
+      if (getPlanFeatures(userPlan).ai) {
         const historyRes = await fetch(`/api/sites/${params.id}/advisor`);
         if (historyRes.ok) {
           const { messages } = await historyRes.json();
@@ -408,7 +410,9 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
                   {loadingReport === scan.id && <p className="text-sm text-ink-soft">Caricamento report...</p>}
                   {(() => {
                     const scanReport = reportsByScan[scan.id];
-                    return scanReport ? <ReportView report={scanReport} onUpgrade={handleUpgrade} /> : null;
+                    return scanReport ? (
+                      <ReportView report={scanReport} plan={plan} onUpgrade={handleUpgrade} />
+                    ) : null;
                   })()}
                 </div>
               )}
