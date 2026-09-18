@@ -1,53 +1,6 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-
-const BUSINESS_TYPES = [
-  { value: "bnb", label: "B&B / Casa vacanze" },
-  { value: "hotel", label: "Hotel" },
-  { value: "restaurant", label: "Ristorante" },
-  { value: "shop", label: "Negozio" },
-  { value: "professional", label: "Professionista" },
-  { value: "other", label: "Altro" },
-] as const;
-
-const GOALS = [
-  { value: "increase_bookings", label: "Ricevere piu' prenotazioni" },
-  { value: "increase_calls", label: "Ricevere piu' telefonate" },
-  { value: "increase_quote_requests", label: "Ricevere piu' richieste di preventivo" },
-  { value: "increase_visibility", label: "Aumentare la visibilita' online" },
-  { value: "sell_products", label: "Vendere prodotti" },
-  { value: "increase_contacts", label: "Ottenere piu' contatti" },
-] as const;
 
 export default function HomePage() {
-  const router = useRouter();
-  // I campi del modulo non vengono inviati da nessuna parte: l'analisi si
-  // avvia solo da un account (vedi goToAnalysis).
-  const [url, setUrl] = useState("");
-  const [businessType, setBusinessType] = useState<(typeof BUSINESS_TYPES)[number]["value"]>("bnb");
-  const [goal, setGoal] = useState<(typeof GOALS)[number]["value"]>("increase_bookings");
-
-  // Ogni analisi richiede un account: da qui non se ne esegue nessuna.
-  // Chi e' gia' autenticato va alla pagina di analisi della dashboard,
-  // tutti gli altri alla registrazione.
-  async function goToAnalysis() {
-    try {
-      const response = await fetch("/api/auth/me");
-      const data = response.ok ? await response.json() : null;
-      router.push(data?.user ? "/dashboard/analyze" : "/register");
-    } catch {
-      router.push("/register");
-    }
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    void goToAnalysis();
-  }
-
   return (
     <main>
       <nav className="flex items-center justify-between border-b border-line px-6 py-4">
@@ -80,64 +33,12 @@ export default function HomePage() {
             attivita'.
           </p>
 
-          <form onSubmit={handleSubmit} className="mx-auto mt-10 max-w-xl space-y-3 text-left">
-            <label htmlFor="url" className="sr-only">
-              Sito web
-            </label>
-            <input
-              id="url"
-              type="text"
-              placeholder="Inserisci il tuo sito web (es. www.tuosito.it)"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="w-full rounded-md border border-line bg-white px-4 py-3 text-base outline-none focus:border-accent"
-            />
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label htmlFor="businessType" className="mb-1 block text-sm text-ink-soft">
-                  Tipo di attivita'
-                </label>
-                <select
-                  id="businessType"
-                  value={businessType}
-                  onChange={(e) => setBusinessType(e.target.value as typeof businessType)}
-                  className="w-full rounded-md border border-line bg-white px-3 py-2.5 outline-none focus:border-accent"
-                >
-                  {BUSINESS_TYPES.map((b) => (
-                    <option key={b.value} value={b.value}>
-                      {b.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="goal" className="mb-1 block text-sm text-ink-soft">
-                  Obiettivo principale
-                </label>
-                <select
-                  id="goal"
-                  value={goal}
-                  onChange={(e) => setGoal(e.target.value as typeof goal)}
-                  className="w-full rounded-md border border-line bg-white px-3 py-2.5 outline-none focus:border-accent"
-                >
-                  {GOALS.map((g) => (
-                    <option key={g.value} value={g.value}>
-                      {g.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full rounded-md bg-accent px-6 py-3 font-medium text-paper transition-colors hover:bg-accent-deep"
-            >
-              Analizza gratuitamente
-            </button>
-            <p className="text-center text-sm text-ink-soft">Per avviare l&apos;analisi serve un account gratuito.</p>
-          </form>
+          <Link
+            href="/register"
+            className="mt-10 inline-block rounded-md bg-accent px-8 py-4 text-base font-medium text-paper transition-colors hover:bg-accent-deep"
+          >
+            Crea un account gratuito per analizzare il tuo sito
+          </Link>
         </div>
       </section>
 
@@ -321,16 +222,12 @@ export default function HomePage() {
       {/* CTA FINALE */}
       <section className="border-b border-line px-6 py-16 text-center" id="consulenza">
         <h2 className="font-display text-3xl">Pronto a scoprire il tuo Digital Score?</h2>
-        <a
+        <Link
           href="/register"
-          onClick={(e) => {
-            e.preventDefault();
-            void goToAnalysis();
-          }}
           className="mt-6 inline-block rounded-md bg-accent px-6 py-3 font-medium text-paper transition-colors hover:bg-accent-deep"
         >
           Analizza il mio sito
-        </a>
+        </Link>
       </section>
 
       <footer className="px-6 py-10 text-center">

@@ -44,9 +44,9 @@ nella sezione 16, non fidarsi del solo fatto che il codice "sembra corretto".
 
 ```
 Landing page (pubblica)
-  → presenta il prodotto; "Analizza gratuitamente" / "Analizza il mio sito"
-    non eseguono nessuna analisi: portano alla registrazione (/register),
-    o alla pagina di analisi della dashboard se l'utente e' gia' autenticato
+  → presenta il prodotto; i pulsanti "Crea un account gratuito per
+    analizzare il tuo sito" e "Analizza il mio sito" portano alla
+    registrazione (/register): dalla landing non si esegue nessuna analisi
 
 Account autenticato
   → ogni analisi richiede un account ed e' salvata e tracciata: nessuna
@@ -114,7 +114,6 @@ digitalcheck/
       dashboard/site/[id]/page.tsx  # storico, monitoraggio, PDF, condivisione
       admin/page.tsx
       api/
-        scan/route.ts                   # stub: 401 senza account, 410 con account
         sites/route.ts                  # lista/crea siti (autenticato)
         sites/[id]/route.ts              # dettaglio + PATCH monitoraggio + delete
         sites/[id]/scan/route.ts         # scan persistito
