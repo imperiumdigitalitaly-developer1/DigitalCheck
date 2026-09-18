@@ -60,6 +60,11 @@ export default function AdminPage() {
   const [limits, setLimits] = useState<PlanLimit[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savingLimit, setSavingLimit] = useState<string | null>(null);
+  const [changingPlanId, setChangingPlanId] = useState<string | null>(null);
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const loadStats = useCallback(async () => {
     const res = await fetch("/api/admin/stats");
@@ -100,13 +105,48 @@ export default function AdminPage() {
   }, [tab, users, sites, limits, loadUsers, loadSites, loadLimits]);
 
   async function handleChangePlan(userId: string, plan: "FREE" | "PRO") {
-    const res = await fetch(`/api/admin/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan }),
-    });
-    if (res.ok) {
+    setPlanError(null);
+    setChangingPlanId(userId);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setPlanError(data?.error ?? "Impossibile aggiornare il piano.");
+        return;
+      }
       setUsers((prev) => prev?.map((u) => (u.id === userId ? { ...u, plan } : u)) ?? null);
+    } catch {
+      setPlanError("Connessione non riuscita. Riprova.");
+    } finally {
+      setChangingPlanId(null);
+    }
+  }
+
+  async function handleConfirmDeleteUser(confirmEmail: string) {
+    if (!userToDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userToDelete.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmEmail }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setDeleteError(data?.error ?? "Impossibile eliminare l'account.");
+        return;
+      }
+      setUsers((prev) => prev?.filter((u) => u.id !== userToDelete.id) ?? null);
+      setUserToDelete(null);
+    } catch {
+      setDeleteError("Connessione non riuscita. Riprova.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -186,6 +226,7 @@ export default function AdminPage() {
 
         {tab === "users" && (
           <div className="mt-6 space-y-2">
+            {planError && <p className="text-sm text-severity-high">{planError}</p>}
             {!users ? (
               <p className="text-ink-soft">Caricamento...</p>
             ) : (
@@ -209,9 +250,19 @@ export default function AdminPage() {
                     </span>
                     <button
                       onClick={() => handleChangePlan(u.id, u.plan === "PRO" ? "FREE" : "PRO")}
-                      className="rounded-md border border-line px-3 py-1.5 text-sm hover:border-accent"
+                      disabled={changingPlanId === u.id}
+                      className="rounded-md border border-line px-3 py-1.5 text-sm hover:border-accent disabled:opacity-60"
                     >
-                      Passa a {u.plan === "PRO" ? "Free" : "Pro"}
+                      {changingPlanId === u.id ? "Aggiornamento..." : `Passa a ${u.plan === "PRO" ? "Free" : "Pro"}`}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDeleteError(null);
+                        setUserToDelete(u);
+                      }}
+                      className="rounded-md border border-severity-high px-3 py-1.5 text-sm text-severity-high hover:bg-severity-high/10"
+                    >
+                      Elimina account
                     </button>
                   </div>
                 </div>
@@ -332,6 +383,77 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      {userToDelete && (
+        <DeleteUserModal
+          user={userToDelete}
+          deleting={deleting}
+          error={deleteError}
+          onCancel={() => {
+            if (deleting) return;
+            setUserToDelete(null);
+            setDeleteError(null);
+          }}
+          onConfirm={handleConfirmDeleteUser}
+        />
+      )}
     </main>
+  );
+}
+
+function DeleteUserModal({
+  user,
+  deleting,
+  error,
+  onCancel,
+  onConfirm,
+}: {
+  user: AdminUser;
+  deleting: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: (confirmEmail: string) => void;
+}) {
+  const [typedEmail, setTypedEmail] = useState("");
+  const matches = typedEmail.trim().toLowerCase() === user.email.toLowerCase();
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4" role="dialog" aria-modal="true">
+      <div className="w-full max-w-md rounded-lg bg-white p-6">
+        <h3 className="font-display text-xl text-severity-high">Eliminare questo account?</h3>
+        <p className="mt-3 text-sm text-ink-soft">
+          Stai per eliminare definitivamente l&apos;account <strong>{user.email}</strong>. Verranno cancellati in
+          modo irreversibile tutti i suoi siti, scansioni, report, connessioni e l&apos;eventuale abbonamento
+          Stripe attivo. Questa azione non puo&apos; essere annullata.
+        </p>
+        <label className="mt-4 block text-sm text-ink-soft">
+          Per confermare, digita l&apos;email dell&apos;account: <strong>{user.email}</strong>
+          <input
+            type="text"
+            value={typedEmail}
+            onChange={(e) => setTypedEmail(e.target.value)}
+            autoFocus
+            className="mt-1 w-full rounded-md border border-line px-3 py-2 text-ink outline-none focus:border-severity-high"
+          />
+        </label>
+        {error && <p className="mt-2 text-sm text-severity-high">{error}</p>}
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={onCancel}
+            disabled={deleting}
+            className="rounded-md border border-line px-4 py-2 text-sm hover:border-accent disabled:opacity-60"
+          >
+            Annulla
+          </button>
+          <button
+            onClick={() => onConfirm(typedEmail.trim())}
+            disabled={!matches || deleting}
+            className="rounded-md bg-severity-high px-4 py-2 text-sm font-medium text-paper hover:opacity-90 disabled:opacity-50"
+          >
+            {deleting ? "Eliminazione..." : "Elimina definitivamente"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

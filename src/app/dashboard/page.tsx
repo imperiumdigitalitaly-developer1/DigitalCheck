@@ -40,6 +40,9 @@ export default function DashboardPage() {
   const [usage, setUsage] = useState<UsageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [scanningId, setScanningId] = useState<string | null>(null);
+  const [siteToDelete, setSiteToDelete] = useState<SiteListItem | null>(null);
+  const [deletingSite, setDeletingSite] = useState(false);
+  const [deleteSiteError, setDeleteSiteError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     const [meRes, sitesRes, usageRes] = await Promise.all([
@@ -63,6 +66,26 @@ export default function DashboardPage() {
     await fetch(`/api/sites/${siteId}/scan`, { method: "POST" });
     await loadData();
     setScanningId(null);
+  }
+
+  async function handleConfirmDeleteSite() {
+    if (!siteToDelete) return;
+    setDeletingSite(true);
+    setDeleteSiteError(null);
+    try {
+      const res = await fetch(`/api/sites/${siteToDelete.id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setDeleteSiteError(data?.error ?? "Impossibile eliminare il sito.");
+        return;
+      }
+      setSiteToDelete(null);
+      await loadData();
+    } catch {
+      setDeleteSiteError("Connessione non riuscita. Riprova.");
+    } finally {
+      setDeletingSite(false);
+    }
   }
 
   async function handleUpgrade() {
@@ -207,19 +230,64 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleScanNow(site.id)}
-                    disabled={scanningId === site.id}
-                    className="rounded-md border border-line px-4 py-2 text-sm hover:border-accent disabled:opacity-60"
-                  >
-                    {scanningId === site.id ? "Scansione in corso..." : "Scansiona ora"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleScanNow(site.id)}
+                      disabled={scanningId === site.id}
+                      className="rounded-md border border-line px-4 py-2 text-sm hover:border-accent disabled:opacity-60"
+                    >
+                      {scanningId === site.id ? "Scansione in corso..." : "Scansiona ora"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDeleteSiteError(null);
+                        setSiteToDelete(site);
+                      }}
+                      className="rounded-md border border-line px-3 py-2 text-sm text-severity-high hover:border-severity-high"
+                      aria-label={`Elimina ${site.url}`}
+                    >
+                      Elimina
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </section>
+
+      {siteToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-lg bg-white p-6">
+            <h3 className="font-display text-xl">Eliminare questo sito?</h3>
+            <p className="mt-3 text-sm text-ink-soft">
+              Stai per eliminare <strong>{siteToDelete.url}</strong>. Questa azione e&apos; irreversibile ed
+              elimina tutto lo storico di questo sito: scansioni, report, cronologia AI e connessioni
+              Analytics/Search Console collegate.
+            </p>
+            {deleteSiteError && <p className="mt-2 text-sm text-severity-high">{deleteSiteError}</p>}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  if (deletingSite) return;
+                  setSiteToDelete(null);
+                }}
+                disabled={deletingSite}
+                className="rounded-md border border-line px-4 py-2 text-sm hover:border-accent disabled:opacity-60"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleConfirmDeleteSite}
+                disabled={deletingSite}
+                className="rounded-md bg-severity-high px-4 py-2 text-sm font-medium text-paper hover:opacity-90 disabled:opacity-60"
+              >
+                {deletingSite ? "Eliminazione..." : "Elimina definitivamente"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardShell>
   );
 }

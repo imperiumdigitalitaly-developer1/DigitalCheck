@@ -70,3 +70,23 @@ export async function createBillingPortalSession(
 
   return { url: session.url };
 }
+
+/**
+ * Cancella subito l'abbonamento su Stripe (usata quando un admin elimina
+ * un account: senza questo, l'abbonamento resterebbe attivo e continuerebbe
+ * ad addebitare un cliente il cui account non esiste piu' nel nostro DB).
+ * Se Stripe non e' configurato o l'abbonamento non esiste piu' lato Stripe,
+ * non blocchiamo l'eliminazione dell'account: logghiamo e proseguiamo.
+ */
+export async function cancelSubscriptionImmediately(stripeSubscriptionId: string): Promise<void> {
+  const stripe = getStripeClient();
+  if (!stripe) return;
+  try {
+    await stripe.subscriptions.cancel(stripeSubscriptionId);
+  } catch (err) {
+    console.error(
+      `[stripe] impossibile cancellare l'abbonamento ${stripeSubscriptionId} durante l'eliminazione account:`,
+      err instanceof Error ? err.message : err
+    );
+  }
+}
