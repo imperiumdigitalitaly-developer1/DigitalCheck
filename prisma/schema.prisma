@@ -292,6 +292,12 @@ model MonitoringConfig {
   configured Boolean  @default(false)
   provider   String?
   checkUrl   String?
+  // ID del monitor sul provider esterno (es. UptimeRobot) — vedi
+  // src/lib/integrations/uptimerobot.ts. Stringa, non Int: gli ID
+  // UptimeRobot sono interi grandi e qui contano solo come riferimento
+  // opaco, mai per calcoli. `configured` resta true solo quando questo
+  // campo e' valorizzato (il monitor esiste davvero sul provider).
+  monitorId  String?
   updatedAt  DateTime @updatedAt
 }
 

@@ -19,3 +19,20 @@ export function StatusBadge({ status }: { status: "connected" | "not_connected" 
     </span>
   );
 }
+
+/** Stato live di un monitor di uptime (UptimeRobot): stesso stile sobrio di StatusBadge, valori diversi. */
+export function MonitorStatusBadge({ status }: { status: "up" | "down" | "paused" | "pending" | "unknown" }) {
+  const config = {
+    up: { label: "Online", className: "bg-score-strong/10 text-score-strong border-score-strong/30" },
+    down: { label: "Down", className: "bg-severity-high/10 text-severity-high border-severity-high/30" },
+    paused: { label: "In pausa", className: "bg-line text-ink-soft border-line" },
+    pending: { label: "In attesa del primo controllo", className: "bg-line text-ink-soft border-line" },
+    unknown: { label: "Stato sconosciuto", className: "bg-line text-ink-soft border-line" },
+  }[status];
+
+  return (
+    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${config.className}`}>
+      {config.label}
+    </span>
+  );
+}

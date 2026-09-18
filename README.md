@@ -315,11 +315,12 @@ copiare in `.env.local`.
 | Scheduler (Vercel Cron o esterno) | Monitoraggio periodico | `CRON_SECRET` | richiesto per il cron |
 | Google Analytics Data API (OAuth) | Tab "Web Analytics" del Gestionale | `GOOGLE_ANALYTICS_CLIENT_ID/SECRET` | **non implementato**: schema pronto (`AnalyticsConnection`), OAuth da collegare |
 | Google Search Console API (OAuth) | Tab "Search Console" del Gestionale | `GOOGLE_SEARCH_CONSOLE_CLIENT_ID/SECRET` | **non implementato**: schema pronto (`SearchConsoleConnection`) |
-| Provider di uptime monitoring | Tab "Observability" del Gestionale | `MONITORING_PROVIDER_API_KEY` | **non implementato**: schema pronto (`MonitoringConfig`) |
+| UptimeRobot (API v2) | Tab "Observability" del Gestionale | `UPTIMEROBOT_API_KEY` | implementato — creazione/eliminazione automatica del monitor, stato letto in tempo reale con cache di 5 minuti |
 
-Finche' le tre integrazioni "non implementate" non vengono collegate, il
-Gestionale mostra sempre esplicitamente "Connessione richiesta" / "Non
-configurato" — mai dati finti (brief, sezioni 17, 20, 45).
+Finche' Google Analytics e Search Console non vengono collegati (OAuth da
+configurare), il Gestionale mostra sempre esplicitamente "Connessione
+richiesta" — mai dati finti (brief, sezioni 17, 20, 45). Lo stesso vale
+per Observability se `UPTIMEROBOT_API_KEY` non e' configurata.
 
 ## 15. Stima qualitativa dei costi operativi
 
@@ -369,8 +370,6 @@ deploy.
   nel Gestionale (schema DB pronto — `AnalyticsConnection`,
   `SearchConsoleConnection` — ma il flusso di collegamento account non e'
   implementato: richiede credenziali OAuth Google, vedi `.env.example`)
-- Provider di uptime monitoring per la tab Observability (schema pronto —
-  `MonitoringConfig` — nessun provider collegato)
 - Pagina pubblica di visualizzazione del report condiviso (oggi il link
   pubblico serve direttamente il PDF, non una pagina HTML col branding)
 - Flusso di invito/promozione a admin (oggi va fatto a mano sul database)

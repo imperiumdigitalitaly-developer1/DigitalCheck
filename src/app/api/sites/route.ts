@@ -4,6 +4,9 @@ import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getPlanLimits, countSitesThisMonth } from "@/lib/billing/plan-limits";
 import { toDbBusinessType, fromDbBusinessType } from "@/lib/db/enum-map";
+import { getPlanFeatures } from "@/lib/billing/plan-config";
+import { getUptimeRobotApiKey } from "@/lib/integrations/uptimerobot";
+import { provisionMonitorForSite } from "@/lib/gestionale/observability";
 
 const createSchema = z.object({
   url: z
@@ -102,6 +105,17 @@ export async function POST(request: NextRequest) {
   // usata (altrimenti create+delete diventerebbe un modo per aggirare il
   // limite "1 sito nuovo al mese" del piano Free).
   await prisma.usageEvent.create({ data: { userId: session.userId, type: "NEW_SITE" } });
+
+  // Monitor UptimeRobot per la tab Observability del Gestionale (piano
+  // Pro): creazione best-effort, non deve mai far fallire la creazione
+  // del sito. Se fallisce (chiave assente, rete, quota UptimeRobot) il
+  // sito resta senza monitor e la UI mostra il pulsante per collegarlo
+  // retroattivamente (vedi POST /api/gestionale/observability).
+  if (getPlanFeatures(user.plan).dashboard && getUptimeRobotApiKey()) {
+    await provisionMonitorForSite(site.id, site.url).catch((err) => {
+      console.error(`[observability] provisioning monitor fallito per il sito ${site.id}:`, err);
+    });
+  }
 
   return NextResponse.json(site, { status: 201 });
 }

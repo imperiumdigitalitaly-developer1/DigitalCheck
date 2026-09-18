@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { fromDbBusinessType } from "@/lib/db/enum-map";
+import { deprovisionMonitorForSite } from "@/lib/gestionale/observability";
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const session = await getCurrentSession();
@@ -101,9 +102,17 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const session = await getCurrentSession();
   if (!session) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
 
-  const site = await prisma.site.findUnique({ where: { id: params.id } });
+  const site = await prisma.site.findUnique({ where: { id: params.id }, include: { monitoringConfig: true } });
   if (!site || site.ownerId !== session.userId) {
     return NextResponse.json({ error: "Sito non trovato" }, { status: 404 });
+  }
+
+  // Va eliminato PRIMA del sito: onDelete: Cascade rimuove comunque la riga
+  // MonitoringConfig dal nostro DB, ma non tocca UptimeRobot — senza questa
+  // chiamata il monitor resterebbe orfano e continuerebbe a consumare la
+  // quota dell'account (brief, punto 4).
+  if (site.monitoringConfig?.monitorId) {
+    await deprovisionMonitorForSite(site.monitoringConfig.monitorId);
   }
 
   await prisma.site.delete({ where: { id: params.id } });

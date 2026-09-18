@@ -7,7 +7,7 @@ import { DashboardShell } from "@/components/DashboardShell";
 import { MetricCard } from "@/components/MetricCard";
 import { EmptyState } from "@/components/EmptyState";
 import { UpgradeCard } from "@/components/UpgradeCard";
-import { StatusBadge } from "@/components/StatusBadge";
+import { StatusBadge, MonitorStatusBadge } from "@/components/StatusBadge";
 import { ScoreTrendChart } from "@/components/ScoreTrendChart";
 import { CATEGORY_LABELS } from "@/lib/category-labels";
 
@@ -52,6 +52,35 @@ interface ConnectionsData {
   monitoring: { configured: boolean };
 }
 
+interface MonitorIncident {
+  kind: "down" | "up" | "started" | "paused" | "other";
+  at: string;
+  durationSeconds: number | null;
+}
+
+interface MonitorSnapshot {
+  monitorId: string;
+  url: string;
+  status: "up" | "down" | "paused" | "pending" | "unknown";
+  uptimeRatio30d: number | null;
+  lastResponseTimeMs: number | null;
+  incidents: MonitorIncident[];
+}
+
+interface ObservabilityData {
+  providerConfigured: boolean;
+  monitor: MonitorSnapshot | null;
+  error: string | null;
+}
+
+const INCIDENT_LABEL: Record<MonitorIncident["kind"], string> = {
+  down: "Sito irraggiungibile",
+  up: "Tornato online",
+  started: "Monitoraggio avviato",
+  paused: "Monitoraggio in pausa",
+  other: "Evento",
+};
+
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   missing_site: "Seleziona un sito prima di collegare l'integrazione.",
   site_not_found: "Sito non trovato o non di tua proprieta'.",
@@ -86,6 +115,10 @@ function GestionaleView() {
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [connections, setConnections] = useState<ConnectionsData | null>(null);
+  const [observability, setObservability] = useState<ObservabilityData | null>(null);
+  const [observabilityLoading, setObservabilityLoading] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
+  const [provisionError, setProvisionError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetch("/api/auth/me").then((r) => r.json()), fetch("/api/sites").then((r) => (r.ok ? r.json() : []))]).then(
@@ -143,12 +176,46 @@ function GestionaleView() {
     if (res.ok) setConnections(await res.json());
   }, []);
 
+  const loadObservability = useCallback(async (siteId: string) => {
+    if (!siteId) return;
+    setObservabilityLoading(true);
+    setProvisionError(null);
+    try {
+      const res = await fetch(`/api/gestionale/observability?siteId=${siteId}`);
+      if (res.ok) setObservability(await res.json());
+    } finally {
+      setObservabilityLoading(false);
+    }
+  }, []);
+
+  const handleProvisionMonitor = useCallback(async () => {
+    if (!selectedSiteId) return;
+    setProvisioning(true);
+    setProvisionError(null);
+    try {
+      const res = await fetch("/api/gestionale/observability", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteId: selectedSiteId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setProvisionError(data.error ?? "Impossibile creare il monitor.");
+        return;
+      }
+      await loadObservability(selectedSiteId);
+    } finally {
+      setProvisioning(false);
+    }
+  }, [selectedSiteId, loadObservability]);
+
   useEffect(() => {
     if (user?.plan !== "PRO") return;
     if (tab === "overview") loadOverview();
     if (tab === "metrics") loadMetrics(selectedSiteId);
-    if (tab === "analytics" || tab === "search-console" || tab === "observability") loadConnections(selectedSiteId);
-  }, [tab, selectedSiteId, user, loadOverview, loadMetrics, loadConnections]);
+    if (tab === "analytics" || tab === "search-console") loadConnections(selectedSiteId);
+    if (tab === "observability") loadObservability(selectedSiteId);
+  }, [tab, selectedSiteId, user, loadOverview, loadMetrics, loadConnections, loadObservability]);
 
   async function handleUpgrade() {
     const response = await fetch("/api/billing/checkout", { method: "POST" });
@@ -413,26 +480,92 @@ function GestionaleView() {
         <div className="mt-6 max-w-xl rounded-lg border border-line bg-white p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg">Observability</h2>
-            <StatusBadge status={connections?.monitoring.configured ? "connected" : "not_configured"} />
+            {observability?.monitor ? (
+              <MonitorStatusBadge status={observability.monitor.status} />
+            ) : (
+              <StatusBadge status={observability?.providerConfigured ? "not_connected" : "not_configured"} />
+            )}
           </div>
-          {connections?.monitoring.configured ? (
-            <p className="mt-3 text-sm text-ink-soft">Uptime, tempi di risposta ed errori comparirebbero qui.</p>
-          ) : (
+
+          {observabilityLoading && !observability && (
+            <p className="mt-3 text-sm text-ink-soft">Caricamento...</p>
+          )}
+
+          {observability?.monitor ? (
             <>
-              <p className="mt-3 text-sm text-ink-soft">Monitoring non ancora configurato.</p>
-              <p className="mt-1 text-sm text-ink-soft">
-                Una volta collegato un provider di uptime monitoring, qui compariranno disponibilita', tempi di
-                risposta, errori e incidenti in tempo reale.
+              <p className="mt-1 text-xs text-ink-soft">Dati da UptimeRobot — aggiornati al massimo ogni 5 minuti.</p>
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <MetricCard
+                  label="Uptime (30 giorni)"
+                  value={observability.monitor.uptimeRatio30d != null ? `${observability.monitor.uptimeRatio30d.toFixed(2)}%` : "—"}
+                />
+                <MetricCard
+                  label="Tempo di risposta (ultima rilevazione)"
+                  value={observability.monitor.lastResponseTimeMs != null ? `${observability.monitor.lastResponseTimeMs} ms` : "—"}
+                />
+              </div>
+
+              <h3 className="mt-6 text-sm font-medium">Eventi recenti</h3>
+              {observability.monitor.incidents.length === 0 ? (
+                <p className="mt-2 text-sm text-ink-soft">Nessun evento registrato di recente.</p>
+              ) : (
+                <ul className="mt-2 space-y-2">
+                  {observability.monitor.incidents.map((incident, i) => (
+                    <li key={i} className="rounded-lg border border-line p-3 text-sm">
+                      <span className="font-medium">{INCIDENT_LABEL[incident.kind]}</span>{" "}
+                      <span className="text-ink-soft">
+                        — {new Date(incident.at).toLocaleString("it-IT")}
+                        {incident.durationSeconds != null && incident.kind === "down"
+                          ? ` · durata ${Math.round(incident.durationSeconds / 60)} min`
+                          : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ) : observability?.error ? (
+            <>
+              <p className="mt-3 text-sm text-ink-soft">
+                Il monitor e' collegato, ma non e' stato possibile leggerne lo stato in questo momento.
               </p>
+              <p className="mt-1 text-sm text-severity-high">{observability.error}</p>
               <button
-                disabled
-                title="Richiede la configurazione di un provider di monitoring"
-                className="mt-4 cursor-not-allowed rounded-md border border-line px-4 py-2 text-sm text-ink-soft opacity-70"
+                onClick={() => loadObservability(selectedSiteId)}
+                className="mt-4 rounded-md border border-line px-4 py-2 text-sm hover:border-accent"
               >
-                Configura monitoring
+                Riprova
               </button>
             </>
-          )}
+          ) : observability && !observabilityLoading ? (
+            <>
+              <p className="mt-3 text-sm text-ink-soft">Monitoring non ancora configurato per questo sito.</p>
+              <p className="mt-1 text-sm text-ink-soft">
+                Una volta collegato, qui compariranno disponibilita', tempi di risposta ed eventuali interruzioni
+                rilevate realmente da UptimeRobot.
+              </p>
+              {observability.providerConfigured ? (
+                <>
+                  <button
+                    onClick={handleProvisionMonitor}
+                    disabled={provisioning}
+                    className="mt-4 rounded-md bg-accent px-4 py-2 text-sm text-paper hover:bg-accent-deep disabled:opacity-60"
+                  >
+                    {provisioning ? "Configurazione in corso..." : "Configura monitoring"}
+                  </button>
+                  {provisionError && <p className="mt-2 text-sm text-severity-high">{provisionError}</p>}
+                </>
+              ) : (
+                <button
+                  disabled
+                  title="Richiede la configurazione di UPTIMEROBOT_API_KEY lato server"
+                  className="mt-4 cursor-not-allowed rounded-md border border-line px-4 py-2 text-sm text-ink-soft opacity-70"
+                >
+                  Configura monitoring
+                </button>
+              )}
+            </>
+          ) : null}
         </div>
       )}
     </DashboardShell>
