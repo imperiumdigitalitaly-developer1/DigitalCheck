@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { UpgradeCard } from "@/components/UpgradeCard";
 import { StatusBadge, MonitorStatusBadge } from "@/components/StatusBadge";
 import { ScoreTrendChart } from "@/components/ScoreTrendChart";
+import { SearchConsolePanel } from "@/components/SearchConsolePanel";
 import { CATEGORY_LABELS } from "@/lib/category-labels";
 
 interface MeUser {
@@ -419,13 +420,16 @@ function GestionaleView() {
       )}
 
       {tab === "search-console" && (
-        <div className="mt-6 max-w-xl rounded-lg border border-line bg-white p-6">
+        <div className="mt-6 max-w-3xl rounded-lg border border-line bg-white p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg">Search Console</h2>
             <StatusBadge status={connections?.searchConsole.connected ? "connected" : "not_connected"} />
           </div>
           {connections?.searchConsole.connected ? (
-            <p className="mt-3 text-sm text-ink-soft">Click, impression, CTR e posizione media comparirebbero qui.</p>
+            <SearchConsolePanel
+              siteId={selectedSiteId}
+              connectHref={`/api/gestionale/connections/search-console/connect?siteId=${selectedSiteId}`}
+            />
           ) : connections?.searchConsole.configured ? (
             <>
               <p className="mt-3 text-sm text-ink-soft">Google Search Console non collegata per questo sito.</p>

@@ -278,11 +278,20 @@ model SearchConsoleConnection {
   siteId       String    @unique
   site         Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
   connected    Boolean   @default(false)
-  siteUrl      String?
-  accessToken  String?
-  refreshToken String?
-  connectedAt  DateTime?
-  updatedAt    DateTime  @updatedAt
+  // Proprieta' Search Console scelta dall'utente tra quelle restituite da
+  // sites.list (un account puo' averne piu' di una) — vedi
+  // src/lib/gestionale/search-console.ts. null finche' non viene scelta:
+  // "connesso" (token valido) e "proprieta' selezionata" sono stati
+  // distinti, mostrati separatamente nel Gestionale.
+  siteUrl              String?
+  accessToken          String?
+  refreshToken         String?
+  // Scadenza dell'accessToken corrente: permette di rinnovarlo in modo
+  // proattivo (vedi getValidSearchConsoleToken) invece di scoprirlo solo
+  // dopo una risposta 401 da Google.
+  accessTokenExpiresAt DateTime?
+  connectedAt          DateTime?
+  updatedAt            DateTime  @updatedAt
 }
 
 model MonitoringConfig {

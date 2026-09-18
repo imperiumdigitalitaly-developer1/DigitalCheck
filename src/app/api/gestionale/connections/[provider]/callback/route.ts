@@ -7,6 +7,7 @@ import {
   exchangeGoogleAuthCode,
 } from "@/lib/integrations/google-oauth";
 import { verifyOAuthState } from "@/lib/integrations/oauth-state";
+import { reconcileSelectedProperty } from "@/lib/gestionale/search-console";
 
 function tabFor(provider: string): string {
   return provider === "analytics" ? "analytics" : "search-console";
@@ -88,11 +89,18 @@ export async function GET(request: NextRequest, { params }: { params: { provider
       update: tokenData,
     });
   } else {
+    // Solo Search Console traccia la scadenza dell'access token (vedi
+    // getValidSearchConsoleToken): permette il refresh proattivo.
+    const searchConsoleData = {
+      ...tokenData,
+      accessTokenExpiresAt: new Date(Date.now() + result.tokens.expiresIn * 1000),
+    };
     await prisma.searchConsoleConnection.upsert({
       where: { siteId: site.id },
-      create: { siteId: site.id, ...tokenData },
-      update: tokenData,
+      create: { siteId: site.id, ...searchConsoleData },
+      update: searchConsoleData,
     });
+    await reconcileSelectedProperty(site.id, result.tokens.accessToken);
   }
 
   gestionaleUrl.searchParams.set("siteId", site.id);

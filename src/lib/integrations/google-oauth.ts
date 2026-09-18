@@ -119,3 +119,61 @@ export async function exchangeGoogleAuthCode(params: {
     };
   }
 }
+
+export interface GoogleRefreshResult {
+  accessToken: string;
+  expiresIn: number;
+}
+
+/**
+ * Rinnova un access token scaduto usando il refresh_token salvato
+ * (grant_type=refresh_token). Condiviso da tutte le integrazioni Google
+ * (Analytics, Search Console, eventuali future): la logica di "quando"
+ * chiamarlo e di persistenza vive in src/lib/gestionale/google-connection.ts,
+ * qui c'e' solo la chiamata OAuth pura.
+ *
+ * `invalidGrant: true` distingue il caso in cui il refresh token stesso
+ * non e' piu' valido (revocato dall'utente su Google, o scaduto per
+ * inattivita' prolungata) — in quel caso non ha senso riprovare, serve
+ * ricollegare l'account da capo.
+ */
+export async function refreshGoogleAccessToken(params: {
+  refreshToken: string;
+  credentials: GoogleOAuthCredentials;
+}): Promise<{ ok: true; result: GoogleRefreshResult } | { ok: false; error: string; invalidGrant: boolean }> {
+  try {
+    const response = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        refresh_token: params.refreshToken,
+        client_id: params.credentials.clientId,
+        client_secret: params.credentials.clientSecret,
+        grant_type: "refresh_token",
+      }),
+    });
+
+    const data = (await response.json().catch(() => null)) as
+      | { access_token?: string; expires_in?: number; error?: string }
+      | null;
+
+    if (!response.ok || !data?.access_token) {
+      const invalidGrant = data?.error === "invalid_grant";
+      return {
+        ok: false,
+        invalidGrant,
+        error: data?.error
+          ? `Google ha rifiutato il refresh (${data.error})`
+          : `Google ha risposto con status ${response.status} durante il refresh`,
+      };
+    }
+
+    return { ok: true, result: { accessToken: data.access_token, expiresIn: data.expires_in ?? 3600 } };
+  } catch (err) {
+    return {
+      ok: false,
+      invalidGrant: false,
+      error: err instanceof Error ? err.message : "Errore di rete durante il refresh del token Google",
+    };
+  }
+}
