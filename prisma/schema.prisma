@@ -43,6 +43,11 @@ enum BusinessType {
   OTHER
 }
 
+enum UsageEventType {
+  SCAN
+  NEW_SITE
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -65,6 +70,24 @@ model User {
   sites         Site[]
   notifications Notification[]
   subscription  Subscription?
+  usageEvents   UsageEvent[]
+}
+
+// Registro append-only dei consumi di quota (un'analisi eseguita, un
+// nuovo sito creato). Deliberatamente NON collegato a Scan/Site: se quella
+// riga viene eliminata, la quota gia' consumata nel periodo corrente deve
+// restare tale, altrimenti eliminare un sito libererebbe quota analisi/
+// nuovi-siti gia' usata (vedi countScansThisWeek/Month e
+// countSitesThisMonth in src/lib/billing/plan-limits.ts, che leggono da
+// qui invece che contare le righe Scan/Site esistenti).
+model UsageEvent {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      UsageEventType
+  createdAt DateTime       @default(now())
+
+  @@index([userId, type, createdAt])
 }
 
 // Un utente puo' avere piu' organizzazioni in futuro (es. agenzia che

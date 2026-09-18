@@ -97,5 +97,11 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  // Consumo di quota "nuovo sito" registrato indipendentemente dal sito
+  // stesso: eliminarlo in seguito non deve liberare la quota mensile gia'
+  // usata (altrimenti create+delete diventerebbe un modo per aggirare il
+  // limite "1 sito nuovo al mese" del piano Free).
+  await prisma.usageEvent.create({ data: { userId: session.userId, type: "NEW_SITE" } });
+
   return NextResponse.json(site, { status: 201 });
 }

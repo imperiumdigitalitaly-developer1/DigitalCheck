@@ -61,21 +61,23 @@ function startOfCurrentWeek(): Date {
   return d;
 }
 
+// Le tre funzioni "ThisWeek/ThisMonth" leggono da UsageEvent (registro
+// append-only), MAI da Scan/Site: quelle righe possono essere cancellate
+// dall'utente (eliminazione sito) o dalla cascade DB, e un conteggio
+// derivato da righe cancellabili permetterebbe di "liberare" quota gia'
+// consumata semplicemente eliminando il sito o lo scan. countSites (sotto)
+// e' l'unica eccezione voluta: rappresenta lo stato attuale (quanti siti
+// esistono ORA), non un consumo storico, quindi e' corretto che scenda
+// quando un sito viene eliminato.
 export async function countScansThisMonth(userId: string): Promise<number> {
-  return prisma.scan.count({
-    where: {
-      site: { ownerId: userId },
-      startedAt: { gte: startOfCurrentMonth() },
-    },
+  return prisma.usageEvent.count({
+    where: { userId, type: "SCAN", createdAt: { gte: startOfCurrentMonth() } },
   });
 }
 
 export async function countScansThisWeek(userId: string): Promise<number> {
-  return prisma.scan.count({
-    where: {
-      site: { ownerId: userId },
-      startedAt: { gte: startOfCurrentWeek() },
-    },
+  return prisma.usageEvent.count({
+    where: { userId, type: "SCAN", createdAt: { gte: startOfCurrentWeek() } },
   });
 }
 
@@ -84,7 +86,7 @@ export async function countSites(userId: string): Promise<number> {
 }
 
 export async function countSitesThisMonth(userId: string): Promise<number> {
-  return prisma.site.count({
-    where: { ownerId: userId, createdAt: { gte: startOfCurrentMonth() } },
+  return prisma.usageEvent.count({
+    where: { userId, type: "NEW_SITE", createdAt: { gte: startOfCurrentMonth() } },
   });
 }

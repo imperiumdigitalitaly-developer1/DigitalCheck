@@ -16,6 +16,11 @@ export async function persistScanForSite(site: Site, owner: User): Promise<Persi
 
   const scan = await prisma.scan.create({ data: { siteId: site.id, status: "REQUESTED" } });
 
+  // Consumo di quota registrato subito e in modo indipendente dallo scan
+  // stesso: se lo scan (o il sito a cui appartiene) viene poi eliminato,
+  // la quota gia' usata in questo periodo non deve tornare disponibile.
+  await prisma.usageEvent.create({ data: { userId: site.ownerId, type: "SCAN" } });
+
   try {
     await prisma.scan.update({ where: { id: scan.id }, data: { status: "CRAWLING" } });
 
