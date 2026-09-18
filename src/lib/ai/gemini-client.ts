@@ -33,22 +33,28 @@ function lowPriorityBlockedReason(): string | null {
   return null;
 }
 
-export async function callGemini(
+// Errori temporanei del provider (503 = "high demand", 429 = rate limit):
+// le chiamate ad alta priorita' (analisi Report/PDF, AI Assistant) li
+// ritentano con un breve backoff prima di arrendersi. Le chiamate "low"
+// (widget pubblico) non ritentano mai, per non aggiungere carico a un
+// provider gia' saturo. Ogni tentativo ha il proprio timeout.
+const RETRYABLE_STATUSES = new Set([429, 503]);
+const RETRY_DELAYS_MS = [2_000, 5_000]; // 3 tentativi totali
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+interface AttemptOutcome {
+  result: GeminiCallResult;
+  retryable: boolean;
+}
+
+async function requestOnce(
+  apiKey: string,
+  model: string,
   system: string,
   user: string,
-  options?: { timeoutMs?: number; priority?: GeminiPriority; json?: boolean }
-): Promise<GeminiCallResult> {
-  const apiKey = process.env.AI_API_KEY;
-  if (!apiKey) {
-    return { text: null, errorReason: "Nessun provider AI configurato (AI_API_KEY assente)." };
-  }
-
-  if (options?.priority === "low") {
-    const blocked = lowPriorityBlockedReason();
-    if (blocked) return { text: null, errorReason: blocked };
-  }
-
-  const model = process.env.AI_MODEL || "gemini-3.6-flash";
+  options?: { timeoutMs?: number; json?: boolean }
+): Promise<AttemptOutcome> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options?.timeoutMs ?? 20_000);
 
@@ -78,8 +84,11 @@ export async function callGemini(
       if (response.status === 429) quotaCooldownUntil = Date.now() + QUOTA_COOLDOWN_MS;
       const errorBody = await response.text().catch(() => "");
       return {
-        text: null,
-        errorReason: `Il provider AI ha risposto con status ${response.status}: ${errorBody.slice(0, 300)}`,
+        result: {
+          text: null,
+          errorReason: `Il provider AI ha risposto con status ${response.status}: ${errorBody.slice(0, 300)}`,
+        },
+        retryable: RETRYABLE_STATUSES.has(response.status),
       };
     }
 
@@ -94,15 +103,56 @@ export async function callGemini(
       .map((part) => part.text ?? "")
       .join("");
     if (!text) {
-      return { text: null, errorReason: "Risposta del provider AI priva di contenuto testuale" };
+      return {
+        result: { text: null, errorReason: "Risposta del provider AI priva di contenuto testuale" },
+        retryable: false,
+      };
     }
-    return { text };
+    return { result: { text }, retryable: false };
   } catch (err) {
     return {
-      text: null,
-      errorReason: err instanceof Error ? err.message : "Errore sconosciuto durante la chiamata AI",
+      result: {
+        text: null,
+        errorReason: err instanceof Error ? err.message : "Errore sconosciuto durante la chiamata AI",
+      },
+      retryable: false,
     };
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function callGemini(
+  system: string,
+  user: string,
+  options?: { timeoutMs?: number; priority?: GeminiPriority; json?: boolean }
+): Promise<GeminiCallResult> {
+  const apiKey = process.env.AI_API_KEY;
+  if (!apiKey) {
+    return { text: null, errorReason: "Nessun provider AI configurato (AI_API_KEY assente)." };
+  }
+
+  if (options?.priority === "low") {
+    const blocked = lowPriorityBlockedReason();
+    if (blocked) return { text: null, errorReason: blocked };
+  }
+
+  const model = process.env.AI_MODEL || "gemini-3.6-flash";
+  const maxAttempts = options?.priority === "low" ? 1 : RETRY_DELAYS_MS.length + 1;
+
+  let attempts = 1;
+  let outcome = await requestOnce(apiKey, model, system, user, options);
+  while (!outcome.result.text && outcome.retryable && attempts < maxAttempts) {
+    const delay = RETRY_DELAYS_MS[attempts - 1] ?? 0;
+    console.warn(
+      `[gemini-client] ${outcome.result.errorReason} - nuovo tentativo ${attempts + 1}/${maxAttempts} tra ${delay / 1000}s`
+    );
+    await sleep(delay);
+    attempts++;
+    outcome = await requestOnce(apiKey, model, system, user, options);
+  }
+  if (!outcome.result.text && attempts > 1) {
+    outcome.result.errorReason = `${outcome.result.errorReason} (dopo ${attempts} tentativi)`;
+  }
+  return outcome.result;
 }

@@ -8,6 +8,10 @@ import { toFreeReport } from "@/lib/billing/report-tiering";
 import { getPlanFeatures } from "@/lib/billing/plan-config";
 
 export const runtime = "nodejs";
+// Crawl + scoring + analisi AI, che con i retry su 503/429 puo' durare fino
+// a ~67s da sola: stesso tetto del cron di rescan, senza affidarsi al
+// default del piano.
+export const maxDuration = 300;
 
 /**
  * Avvia un nuovo scan per un sito gia' registrato dall'utente autenticato

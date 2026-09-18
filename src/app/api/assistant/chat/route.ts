@@ -3,6 +3,8 @@ import { z } from "zod";
 import { askAssistant } from "@/lib/ai/assistant";
 
 export const runtime = "nodejs";
+// Peggior caso della chiamata AI con retry su 503/429: ~67s (3 x 20s + 7s).
+export const maxDuration = 90;
 
 const schema = z.object({
   message: z.string().trim().min(1).max(500),

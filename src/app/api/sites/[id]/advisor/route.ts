@@ -7,6 +7,8 @@ import { askAdvisor } from "@/lib/ai/advisor";
 import { getPlanFeatures } from "@/lib/billing/plan-config";
 
 export const runtime = "nodejs";
+// Peggior caso della chiamata AI con retry su 503/429: ~82s (3 x 25s + 7s).
+export const maxDuration = 120;
 
 const schema = z.object({ question: z.string().trim().min(1).max(500) });
 
