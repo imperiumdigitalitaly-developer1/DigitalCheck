@@ -25,12 +25,17 @@ interface SiteListItem {
 
 type Tab = "overview" | "analytics" | "search-console" | "metrics" | "observability";
 
+// "observability" resta un valore valido di Tab (route/stato/API invariati,
+// vedi src/lib/integrations/uptimerobot.ts) ma e' temporaneamente escluso
+// da questa lista: nasconde la tab dalla navigazione senza toccare
+// l'integrazione sottostante. Per riattivarla basta rimettere la riga qui
+// sotto — vedi anche il redirect nell'effect piu' in basso che riporta a
+// "overview" chi arriva su ?tab=observability da un link salvato.
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "analytics", label: "Web Analytics" },
   { key: "search-console", label: "Search Console" },
   { key: "metrics", label: "Metrics" },
-  { key: "observability", label: "Observability" },
 ];
 
 interface OverviewData {
@@ -139,9 +144,14 @@ function GestionaleView() {
   // per il messaggio), poi ripulisce l'URL cosi' un refresh non lo ripete.
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    const validTabs: Tab[] = ["overview", "analytics", "search-console", "metrics", "observability"];
+    // "observability" e' temporaneamente nascosta (vedi TABS sopra): un
+    // link salvato con ?tab=observability riporta a Overview invece di
+    // aprire una tab non piu' raggiungibile dalla navigazione.
+    const validTabs: Tab[] = ["overview", "analytics", "search-console", "metrics"];
     if (tabParam && (validTabs as string[]).includes(tabParam)) {
       setTab(tabParam as Tab);
+    } else if (tabParam === "observability") {
+      setTab("overview");
     }
     const oauthError = searchParams.get("oauth_error");
     const connected = searchParams.get("connected");
