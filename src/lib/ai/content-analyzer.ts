@@ -63,8 +63,11 @@ async function analyzeUncached(
   user: string,
   priority: GeminiPriority | undefined
 ): Promise<ContentAnalysisResult> {
-  const result = await callGemini(system, user, { timeoutMs: 20_000, priority });
+  const result = await callGemini(system, user, { timeoutMs: 20_000, priority, json: true });
   if (!result.text) {
+    // Loggato oltre a finire in scan.unverifiable: cosi' il motivo e'
+    // visibile nei log del server senza passare dal database.
+    console.error(`[content-analyzer] chiamata AI fallita: ${result.errorReason ?? "errore sconosciuto"}`);
     return {
       analysis: null,
       unavailableReason: `Analisi AI non disponibile: ${result.errorReason ?? "errore sconosciuto"}.`,
@@ -72,7 +75,12 @@ async function analyzeUncached(
   }
 
   const parsed = parseAiAnalysis(result.text);
-  if (!parsed) {
+  if (!parsed.ok) {
+    console.error(
+      `[content-analyzer] risposta AI non utilizzabile: ${parsed.reason}. Inizio risposta: ${JSON.stringify(
+        result.text.slice(0, 500)
+      )}`
+    );
     return {
       analysis: null,
       unavailableReason:
@@ -81,12 +89,12 @@ async function analyzeUncached(
   }
 
   const analysis: AiAnalysis = {
-    summary: parsed.summary,
-    strengths: parsed.strengths,
-    issues: parsed.issues,
-    priorities: parsed.priorities,
-    conversionAnalysis: parsed.conversion_analysis,
-    contentAnalysis: parsed.content_analysis,
+    summary: parsed.data.summary,
+    strengths: parsed.data.strengths,
+    issues: parsed.data.issues,
+    priorities: parsed.data.priorities,
+    conversionAnalysis: parsed.data.conversion_analysis,
+    contentAnalysis: parsed.data.content_analysis,
   };
 
   return { analysis };

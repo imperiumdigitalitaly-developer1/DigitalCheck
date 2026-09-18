@@ -36,7 +36,7 @@ function lowPriorityBlockedReason(): string | null {
 export async function callGemini(
   system: string,
   user: string,
-  options?: { timeoutMs?: number; priority?: GeminiPriority }
+  options?: { timeoutMs?: number; priority?: GeminiPriority; json?: boolean }
 ): Promise<GeminiCallResult> {
   const apiKey = process.env.AI_API_KEY;
   if (!apiKey) {
@@ -65,6 +65,9 @@ export async function callGemini(
         body: JSON.stringify({
           contents: [{ parts: [{ text: user }] }],
           systemInstruction: { parts: [{ text: system }] },
+          // Solo per le chiamate che si aspettano JSON (analisi dei
+          // contenuti): assistente e advisor rispondono in testo libero.
+          ...(options?.json ? { generationConfig: { responseMimeType: "application/json" } } : {}),
         }),
       }
     );
@@ -81,9 +84,15 @@ export async function callGemini(
     }
 
     const data = (await response.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
+      candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[];
     };
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Gemini puo' spezzare la risposta in piu' parti (e i modelli con
+    // "thinking" possono anteporre parti di ragionamento): si concatena il
+    // testo di tutte le parti di risposta, non solo della prima.
+    const text = (data.candidates?.[0]?.content?.parts ?? [])
+      .filter((part) => !part.thought)
+      .map((part) => part.text ?? "")
+      .join("");
     if (!text) {
       return { text: null, errorReason: "Risposta del provider AI priva di contenuto testuale" };
     }
