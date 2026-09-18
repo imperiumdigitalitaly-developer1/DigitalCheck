@@ -106,7 +106,7 @@ export function SearchConsolePanel({ siteId, connectHref }: { siteId: string; co
           L&apos;accesso a Google non e&apos; piu&apos; valido (token scaduto o revocato).
         </p>
         <p className="mt-1 text-sm text-ink-soft">Riconnetti l&apos;account per tornare a vedere i dati di questo sito.</p>
-        <a href={connectHref} className="mt-4 inline-block rounded-md bg-accent px-4 py-2 text-sm text-paper hover:bg-accent-deep">
+        <a href={connectHref} className="tap-target mt-4 inline-block rounded-md bg-accent px-4 py-2 text-sm text-paper hover:bg-accent-deep">
           Riconnetti l&apos;account
         </a>
       </>
@@ -123,11 +123,11 @@ export function SearchConsolePanel({ siteId, connectHref }: { siteId: string; co
           <p className="mt-1 text-sm text-ink-soft">
             Aggiungi e verifica il sito su Search Console con questo account, oppure riconnetti con un account diverso.
           </p>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <button onClick={() => load(true)} className="rounded-md border border-line px-4 py-2 text-sm hover:border-accent">
               Ricontrolla
             </button>
-            <a href={connectHref} className="rounded-md border border-line px-4 py-2 text-sm hover:border-accent">
+            <a href={connectHref} className="tap-target rounded-md border border-line px-4 py-2 text-sm hover:border-accent">
               Usa un altro account
             </a>
           </div>
@@ -143,7 +143,7 @@ export function SearchConsolePanel({ siteId, connectHref }: { siteId: string; co
               <button
                 onClick={() => chooseProperty(p.siteUrl)}
                 disabled={saving}
-                className="w-full rounded-md border border-line px-3 py-2 text-left text-sm hover:border-accent disabled:opacity-60"
+                className="w-full break-words rounded-md border border-line px-3 py-2 text-left text-sm hover:border-accent disabled:opacity-60"
               >
                 {p.siteUrl}
               </button>
@@ -152,7 +152,7 @@ export function SearchConsolePanel({ siteId, connectHref }: { siteId: string; co
         </ul>
         {saveError && <p className="mt-2 text-sm text-severity-high">{saveError}</p>}
         {data.siteUrl && (
-          <button onClick={() => load()} className="mt-3 text-sm text-ink-soft underline">
+          <button onClick={() => load()} className="-mx-2 mt-3 px-2 py-2 text-sm text-ink-soft underline">
             Annulla
           </button>
         )}
@@ -164,7 +164,7 @@ export function SearchConsolePanel({ siteId, connectHref }: { siteId: string; co
     return (
       <>
         <p className="mt-3 text-sm text-severity-high">{data.error}</p>
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={() => load()} className="rounded-md border border-line px-4 py-2 text-sm hover:border-accent">
             Riprova
           </button>
@@ -186,10 +186,10 @@ export function SearchConsolePanel({ siteId, connectHref }: { siteId: string; co
   return (
     <>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-ink-soft">
-        <span>
+        <span className="min-w-0 break-words">
           {data.siteUrl} · dal {dateRange.start} al {dateRange.end}
         </span>
-        <button onClick={() => load(true)} className="underline">
+        <button onClick={() => load(true)} className="-mx-2 px-2 py-2 underline">
           Cambia proprieta&apos;
         </button>
       </div>
@@ -200,7 +200,7 @@ export function SearchConsolePanel({ siteId, connectHref }: { siteId: string; co
         </p>
       ) : (
         <>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
             <MetricCard label="Click" value={totals.clicks.toLocaleString("it-IT")} />
             <MetricCard label="Impression" value={totals.impressions.toLocaleString("it-IT")} />
             <MetricCard label="CTR" value={formatPercent(totals.ctr)} />
@@ -219,7 +219,7 @@ function RowsTable({ title, keyLabel, rows }: { title: string; keyLabel: string;
   return (
     <section className="mt-6">
       <h3 className="font-display text-base">{title}</h3>
-      <div className="mt-2 overflow-x-auto">
+      <div className="scroll-shadow-x scroll-shadow-x-white mt-2">
         <table className="w-full text-left text-sm">
           <thead className="text-ink-soft">
             <tr>

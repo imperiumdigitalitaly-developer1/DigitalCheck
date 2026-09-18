@@ -129,7 +129,8 @@ export default function AssistantPage() {
         <select
           value={selectedSiteId}
           onChange={(e) => setSelectedSiteId(e.target.value)}
-          className="rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-accent"
+          aria-label="Sito"
+          className="min-h-[44px] w-full min-w-0 rounded-md border border-line px-3 py-2 text-base outline-none focus:border-accent md:w-auto md:max-w-sm"
         >
           {sites.map((s) => (
             <option key={s.id} value={s.id}>
@@ -160,7 +161,7 @@ export default function AssistantPage() {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Scrivi la tua domanda..."
-            className="flex-1 rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-accent"
+            className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-base outline-none focus:border-accent"
           />
           <button
             type="submit"

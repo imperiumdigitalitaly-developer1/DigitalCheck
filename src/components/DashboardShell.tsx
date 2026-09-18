@@ -30,7 +30,8 @@ function NavLinks({ user, pathname, onNavigate }: { user: DashboardUser; pathnam
             key={item.href}
             href={item.href}
             onClick={onNavigate}
-            className={`flex items-center justify-between rounded-md px-3 py-2 text-sm ${
+            aria-current={active ? "page" : undefined}
+            className={`flex min-h-[44px] items-center justify-between rounded-md px-3 py-2 text-sm ${
               active ? "bg-accent-soft font-medium text-accent-deep" : "text-ink-soft hover:bg-line/50 hover:text-ink"
             }`}
           >
@@ -43,7 +44,8 @@ function NavLinks({ user, pathname, onNavigate }: { user: DashboardUser; pathnam
         <Link
           href="/admin"
           onClick={onNavigate}
-          className={`flex items-center rounded-md px-3 py-2 text-sm ${
+          aria-current={pathname.startsWith("/admin") ? "page" : undefined}
+          className={`flex min-h-[44px] items-center rounded-md px-3 py-2 text-sm ${
             pathname.startsWith("/admin") ? "bg-accent-soft font-medium text-accent-deep" : "text-ink-soft hover:bg-line/50 hover:text-ink"
           }`}
         >
@@ -66,31 +68,44 @@ export function DashboardShell({ user, children }: { user: DashboardUser; childr
   }
 
   return (
-    <div className="min-h-screen bg-paper">
-      <header className="flex items-center justify-between border-b border-line bg-white px-4 py-3 sm:hidden">
-        <Link href="/dashboard" className="flex items-baseline gap-1.5">
-          <span className="font-display text-lg">DigitalCheck</span>
-        </Link>
-        <button
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Apri il menu"
-          className="rounded-md border border-line px-3 py-1.5 text-sm"
-        >
-          Menu
-        </button>
-      </header>
-
-      {mobileOpen && (
-        <div className="border-b border-line bg-white px-4 py-3 sm:hidden">
-          <NavLinks user={user} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
-          <button onClick={handleLogout} className="mt-2 w-full rounded-md border border-line px-3 py-2 text-left text-sm text-ink-soft">
-            Esci
+    <div className="app-touch min-h-screen bg-paper">
+      {/* Sotto lg la sidebar diventa un'intestazione sticky con menu: cosi'
+          resta raggiungibile durante lo scroll e, se piu' alto dello
+          schermo (es. telefono in landscape), scorre al suo interno. */}
+      <div className="sticky top-0 z-40 lg:hidden">
+        <header className="flex items-center justify-between border-b border-line bg-white px-4 py-2">
+          <Link href="/dashboard" className="flex min-h-[44px] items-center gap-1.5">
+            <span className="font-display text-lg">DigitalCheck</span>
+          </Link>
+          <button
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label={mobileOpen ? "Chiudi il menu" : "Apri il menu"}
+            aria-expanded={mobileOpen}
+            aria-controls="dashboard-mobile-menu"
+            className="min-h-[44px] min-w-[44px] rounded-md border border-line px-4 py-1.5 text-sm"
+          >
+            Menu
           </button>
-        </div>
-      )}
+        </header>
+
+        {mobileOpen && (
+          <div
+            id="dashboard-mobile-menu"
+            className="max-h-[calc(100dvh-3.75rem)] overflow-y-auto border-b border-line bg-white px-4 py-3 shadow-md"
+          >
+            <NavLinks user={user} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+            <button
+              onClick={handleLogout}
+              className="mt-2 min-h-[44px] w-full rounded-md border border-line px-3 py-2 text-left text-sm text-ink-soft"
+            >
+              Esci
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="mx-auto flex max-w-6xl">
-        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-white px-4 py-6 sm:flex">
+        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-line bg-white px-4 py-6 lg:flex">
           <Link href="/dashboard" className="flex flex-col gap-0.5 px-3">
             <span className="font-display text-xl">DigitalCheck</span>
             <span className="text-[11px] text-ink-soft">powered by Imperium Digital</span>
@@ -109,14 +124,15 @@ export function DashboardShell({ user, children }: { user: DashboardUser; childr
             <p className="truncate px-3 text-xs text-ink-soft">{user.email}</p>
             <button
               onClick={handleLogout}
-              className="w-full rounded-md px-3 py-2 text-left text-sm text-ink-soft hover:bg-line/50 hover:text-ink"
+              className="min-h-[44px] w-full rounded-md px-3 py-2 text-left text-sm text-ink-soft hover:bg-line/50 hover:text-ink"
             >
               Esci
             </button>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 px-4 py-8 sm:px-8">{children}</main>
+        {/* pb-24: lascia libero il fondo pagina dalla bolla della chat flottante. */}
+        <main className="min-w-0 flex-1 px-4 pb-24 pt-8 sm:px-8">{children}</main>
       </div>
     </div>
   );

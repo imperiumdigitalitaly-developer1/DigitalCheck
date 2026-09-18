@@ -117,7 +117,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/dashboard/analyze"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-paper hover:bg-accent-deep"
+          className="tap-target rounded-md bg-accent px-4 py-2 text-sm font-medium text-paper hover:bg-accent-deep"
         >
           + Nuova analisi
         </Link>
@@ -172,10 +172,10 @@ export default function DashboardPage() {
               <Link
                 key={s.id}
                 href={`/dashboard/site/${s.id}`}
-                className="flex items-center justify-between rounded-lg border border-line bg-white p-4 hover:border-accent"
+                className="flex min-h-[44px] items-center justify-between gap-3 rounded-lg border border-line bg-white p-4 hover:border-accent"
               >
-                <span className="text-sm">{s.url}</span>
-                <span className="text-sm font-medium text-severity-high">Score {s.lastScore}</span>
+                <span className="min-w-0 break-words text-sm">{s.url}</span>
+                <span className="shrink-0 text-sm font-medium text-severity-high">Score {s.lastScore}</span>
               </Link>
             ))}
           </div>
@@ -204,7 +204,7 @@ export default function DashboardPage() {
                   key={site.id}
                   className="flex flex-col items-start gap-4 rounded-lg border border-line bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex min-w-0 items-center gap-4">
                     {site.lastScore != null ? (
                       <ScoreCircle score={site.lastScore} size={64} />
                     ) : (
@@ -212,8 +212,8 @@ export default function DashboardPage() {
                         N/D
                       </div>
                     )}
-                    <div>
-                      <Link href={`/dashboard/site/${site.id}`} className="font-medium hover:text-accent">
+                    <div className="min-w-0">
+                      <Link href={`/dashboard/site/${site.id}`} className="tap-target break-words font-medium hover:text-accent">
                         {site.url}
                       </Link>
                       <p className="text-sm text-ink-soft">
@@ -258,7 +258,7 @@ export default function DashboardPage() {
 
       {siteToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md rounded-lg bg-white p-6">
+          <div className="max-h-full w-full max-w-md overflow-y-auto rounded-lg bg-white p-6">
             <h3 className="font-display text-xl">Eliminare questo sito?</h3>
             <p className="mt-3 text-sm text-ink-soft">
               Stai per eliminare <strong>{siteToDelete.url}</strong>. Questa azione e&apos; irreversibile ed

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import type { DigitalCheckReport } from "@/types";
 import { ReportView } from "@/components/ReportView";
+import { DashboardShell } from "@/components/DashboardShell";
 import { getPlanFeatures } from "@/lib/billing/plan-config";
 
 interface ScanHistoryItem {
@@ -43,6 +44,7 @@ const PRO_FEATURES = [
 export default function SiteDetailPage({ params }: { params: { id: string } }) {
   const [site, setSite] = useState<SiteDetail | null>(null);
   const [plan, setPlan] = useState<"FREE" | "PRO">("FREE");
+  const [account, setAccount] = useState<{ email: string; isAdmin: boolean } | null>(null);
   const isPro = getPlanFeatures(plan).ai;
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
@@ -74,6 +76,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
       const me = await meRes.json();
       const userPlan: "FREE" | "PRO" = me.user?.plan === "PRO" ? "PRO" : "FREE";
       setPlan(userPlan);
+      if (me.user) setAccount({ email: me.user.email, isAdmin: !!me.user.isAdmin });
       if (getPlanFeatures(userPlan).ai) {
         const historyRes = await fetch(`/api/sites/${params.id}/advisor`);
         if (historyRes.ok) {
@@ -199,17 +202,12 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
   const latestCompleted = site.scans.find((s) => s.status === "COMPLETED");
 
   return (
-    <main className="min-h-screen bg-paper">
-      <header className="border-b border-line bg-white px-6 py-4">
-        <div className="mx-auto max-w-4xl">
-          <Link href="/dashboard" className="text-sm text-ink-soft hover:text-ink">
-            ← Torna alla dashboard
-          </Link>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-4xl px-6 py-10">
-        <h1 className="font-display text-2xl">{site.url}</h1>
+    <DashboardShell user={{ email: account?.email ?? "", plan, isAdmin: account?.isAdmin ?? false }}>
+      <div className="mx-auto max-w-4xl">
+        <Link href="/dashboard" className="tap-target -ml-2 px-2 text-sm text-ink-soft hover:text-ink">
+          ← Torna alla dashboard
+        </Link>
+        <h1 className="mt-4 break-words font-display text-2xl">{site.url}</h1>
         <p className="mt-1 text-ink-soft">
           {site.businessType} · {site.goal}
         </p>
@@ -234,7 +232,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
                 href={`/api/reports/${latestCompleted.id}/pdf`}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-md border border-line px-4 py-2 text-sm hover:border-accent"
+                className="tap-target rounded-md border border-line px-4 py-2 text-sm hover:border-accent"
               >
                 Scarica PDF
               </a>
@@ -266,7 +264,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
               <button
                 onClick={() => setUpgradePrompt(false)}
                 aria-label="Chiudi"
-                className="text-ink-soft hover:text-ink"
+                className="-mr-3 -mt-3 flex h-11 w-11 shrink-0 items-center justify-center text-ink-soft hover:text-ink"
               >
                 ✕
               </button>
@@ -324,7 +322,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   placeholder="Scrivi la tua domanda..."
-                  className="flex-1 rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-accent"
+                  className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-base outline-none focus:border-accent"
                 />
                 <button
                   type="submit"
@@ -356,7 +354,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
                 onChange={(e) => setHelpMessage(e.target.value)}
                 placeholder="Descrivi cosa vorresti che sistemassimo sul sito..."
                 rows={3}
-                className="w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-accent"
+                className="w-full rounded-md border border-line px-3 py-2 text-base outline-none focus:border-accent"
               />
               <button
                 type="submit"
@@ -387,10 +385,10 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
                   </p>
                 </div>
                 {scan.status === "COMPLETED" && (
-                  <div className="flex shrink-0 items-center gap-3">
+                  <div className="flex shrink-0 items-center gap-1">
                     <button
                       onClick={() => handleToggleReport(scan.id)}
-                      className="text-sm text-accent hover:underline"
+                      className="px-3 py-2 text-sm text-accent hover:underline"
                     >
                       {openReportScanId === scan.id ? "Nascondi report" : "Vedi report"}
                     </button>
@@ -398,7 +396,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
                       href={`/api/reports/${scan.id}/pdf`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-sm text-accent hover:underline"
+                      className="tap-target px-3 py-2 text-sm text-accent hover:underline"
                     >
                       PDF
                     </a>
@@ -420,6 +418,6 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
           ))}
         </div>
       </div>
-    </main>
+    </DashboardShell>
   );
 }

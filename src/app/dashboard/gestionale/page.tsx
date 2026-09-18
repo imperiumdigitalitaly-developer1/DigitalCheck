@@ -277,12 +277,12 @@ function GestionaleView() {
       )}
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-1 overflow-x-auto border-b border-line">
+        <div className="scroll-shadow-x flex min-w-0 max-w-full gap-1 border-b border-line">
           {TABS.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`whitespace-nowrap px-4 py-2 text-sm ${
+              className={`min-h-[44px] shrink-0 whitespace-nowrap px-4 py-2 text-sm ${
                 tab === t.key ? "border-b-2 border-accent font-medium text-ink" : "text-ink-soft"
               }`}
             >
@@ -295,7 +295,8 @@ function GestionaleView() {
           <select
             value={selectedSiteId}
             onChange={(e) => setSelectedSiteId(e.target.value)}
-            className="rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-accent"
+            aria-label="Sito"
+            className="min-h-[44px] w-full min-w-0 rounded-md border border-line px-3 py-2 text-base outline-none focus:border-accent md:w-auto md:max-w-sm"
           >
             {sites.map((s) => (
               <option key={s.id} value={s.id}>
@@ -326,10 +327,10 @@ function GestionaleView() {
                   <Link
                     key={s.siteId}
                     href={`/dashboard/site/${s.siteId}`}
-                    className="flex items-center justify-between rounded-lg border border-line bg-white p-4 hover:border-accent"
+                    className="flex min-h-[44px] items-center justify-between gap-3 rounded-lg border border-line bg-white p-4 hover:border-accent"
                   >
-                    <span className="text-sm">{s.url}</span>
-                    <span className="text-sm text-ink-soft">
+                    <span className="min-w-0 break-words text-sm">{s.url}</span>
+                    <span className="shrink-0 text-right text-sm text-ink-soft">
                       {s.score != null ? `Score ${s.score}` : "—"} ·{" "}
                       {s.date ? new Date(s.date).toLocaleDateString("it-IT") : ""}
                     </span>
@@ -377,7 +378,7 @@ function GestionaleView() {
       )}
 
       {tab === "analytics" && (
-        <div className="mt-6 max-w-3xl rounded-lg border border-line bg-white p-6">
+        <div className="mt-6 rounded-lg border border-line bg-white p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg">Web Analytics</h2>
             <StatusBadge status={connections?.analytics.connected ? "connected" : "not_connected"} />
@@ -396,7 +397,7 @@ function GestionaleView() {
               </p>
               <a
                 href={`/api/gestionale/connections/analytics/connect?siteId=${selectedSiteId}`}
-                className="mt-4 inline-block rounded-md bg-accent px-4 py-2 text-sm text-paper hover:bg-accent-deep"
+                className="tap-target mt-4 inline-block rounded-md bg-accent px-4 py-2 text-sm text-paper hover:bg-accent-deep"
               >
                 Collega Google Analytics
               </a>
@@ -422,7 +423,7 @@ function GestionaleView() {
       )}
 
       {tab === "search-console" && (
-        <div className="mt-6 max-w-3xl rounded-lg border border-line bg-white p-6">
+        <div className="mt-6 rounded-lg border border-line bg-white p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg">Search Console</h2>
             <StatusBadge status={connections?.searchConsole.connected ? "connected" : "not_connected"} />
@@ -441,7 +442,7 @@ function GestionaleView() {
               </p>
               <a
                 href={`/api/gestionale/connections/search-console/connect?siteId=${selectedSiteId}`}
-                className="mt-4 inline-block rounded-md bg-accent px-4 py-2 text-sm text-paper hover:bg-accent-deep"
+                className="tap-target mt-4 inline-block rounded-md bg-accent px-4 py-2 text-sm text-paper hover:bg-accent-deep"
               >
                 Collega Search Console
               </a>
@@ -468,7 +469,7 @@ function GestionaleView() {
 
       {tab === "metrics" && (
         <div className="mt-6 space-y-6">
-          <div className="rounded-lg border border-line bg-white p-6">
+          <div className="rounded-lg border border-line bg-white p-4 sm:p-6">
             <h2 className="font-display text-lg">Andamento Digital Score</h2>
             <div className="mt-4">
               <ScoreTrendChart
@@ -480,9 +481,9 @@ function GestionaleView() {
           </div>
 
           {metrics && metrics.points.length > 0 && (
-            <div className="rounded-lg border border-line bg-white p-6">
+            <div className="rounded-lg border border-line bg-white p-4 sm:p-6">
               <h2 className="font-display text-lg">Ultimi punteggi per categoria</h2>
-              <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
                 {Object.entries(metrics.points[metrics.points.length - 1]?.categoryScores ?? {}).map(([key, score]) => (
                   <MetricCard key={key} label={CATEGORY_LABELS[key as keyof typeof CATEGORY_LABELS] ?? key} value={score} />
                 ))}

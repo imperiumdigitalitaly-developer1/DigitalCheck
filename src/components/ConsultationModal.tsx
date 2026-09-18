@@ -46,10 +46,10 @@ export function ConsultationModal({ onClose, prefillUrl }: ConsultationModalProp
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-md rounded-lg bg-white p-6">
+      <div className="max-h-full w-full max-w-md overflow-y-auto rounded-lg bg-white p-6">
         <div className="flex items-center justify-between">
           <h3 className="font-display text-xl">Richiedi una consulenza</h3>
-          <button onClick={onClose} aria-label="Chiudi" className="text-ink-soft hover:text-ink">
+          <button onClick={onClose} aria-label="Chiudi" className="-mr-3 flex h-11 w-11 items-center justify-center text-ink-soft hover:text-ink">
             ✕
           </button>
         </div>

@@ -28,3 +28,36 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Bersagli touch: sotto il breakpoint lg (dove la sidebar diventa menu e
+   l'uso e' prevalentemente touch) pulsanti, campi e link "a pulsante"
+   dell'area applicativa (.app-touch) arrivano ad almeno 44px di altezza.
+   Da lg in su restano compatti per l'uso con mouse. */
+@media (max-width: 1023.98px) {
+  .app-touch button,
+  .app-touch select,
+  .app-touch input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  .app-touch .tap-target {
+    min-height: 44px;
+  }
+  .app-touch .tap-target {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* Indicatore di scroll orizzontale (tab e tabelle): un'ombra compare sul
+   lato in cui c'e' ancora contenuto nascosto e sparisce quando si e'
+   arrivati in fondo. Il colore di sfondo va in --scroll-bg. */
+.scroll-shadow-x {
+  --scroll-bg: #f7f5f1;
+  overflow-x: auto;
+  background:
+    linear-gradient(to right, var(--scroll-bg) 30%, transparent) left center / 28px 100% no-repeat local,
+    linear-gradient(to left, var(--scroll-bg) 30%, transparent) right center / 28px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(20, 23, 28, 0.22), transparent) left center / 10px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(20, 23, 28, 0.22), transparent) right center / 10px 100% no-repeat scroll;
+}
+.scroll-shadow-x-white {
+  --scroll-bg: #ffffff;
+}

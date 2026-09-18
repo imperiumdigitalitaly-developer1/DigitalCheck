@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
+import { DashboardShell } from "@/components/DashboardShell";
 
 interface AdminStats {
   totalUsers: number;
@@ -54,6 +54,7 @@ type Tab = "overview" | "users" | "sites" | "limits";
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("overview");
+  const [me, setMe] = useState<{ email: string; plan: "FREE" | "PRO"; isAdmin: boolean } | null>(null);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [sites, setSites] = useState<AdminSite[] | null>(null);
@@ -97,6 +98,13 @@ export default function AdminPage() {
   useEffect(() => {
     loadStats();
   }, [loadStats]);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => setMe(data.user ?? null))
+      .catch(() => setMe(null));
+  }, []);
 
   useEffect(() => {
     if (tab === "users" && !users) loadUsers();
@@ -167,18 +175,11 @@ export default function AdminPage() {
   if (error) return <div className="p-10 text-center text-severity-high">{error}</div>;
 
   return (
-    <main className="min-h-screen bg-paper px-6 py-10">
+    <DashboardShell user={me ?? { email: "", plan: "FREE", isAdmin: true }}>
       <div className="mx-auto max-w-5xl">
-        <div className="flex items-baseline gap-2">
-          <span className="font-display text-lg">DigitalCheck</span>
-          <span className="text-xs text-ink-soft">powered by Imperium Digital</span>
-        </div>
-        <Link href="/dashboard" className="mt-4 inline-block text-sm text-ink-soft hover:text-ink">
-          ← Torna alla dashboard
-        </Link>
-        <h1 className="mt-2 font-display text-2xl">DigitalCheck — Amministrazione</h1>
+        <h1 className="font-display text-2xl">DigitalCheck — Amministrazione</h1>
 
-        <div className="mt-6 flex gap-2 border-b border-line">
+        <div className="scroll-shadow-x mt-6 flex gap-2 border-b border-line">
           {([
             ["overview", "Panoramica"],
             ["users", "Utenti"],
@@ -188,7 +189,7 @@ export default function AdminPage() {
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`px-4 py-2 text-sm ${
+              className={`min-h-[44px] shrink-0 whitespace-nowrap px-4 py-2 text-sm ${
                 tab === key ? "border-b-2 border-accent font-medium text-ink" : "text-ink-soft"
               }`}
             >
@@ -397,7 +398,7 @@ export default function AdminPage() {
           onConfirm={handleConfirmDeleteUser}
         />
       )}
-    </main>
+    </DashboardShell>
   );
 }
 
@@ -419,7 +420,7 @@ function DeleteUserModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md rounded-lg bg-white p-6">
+      <div className="max-h-full w-full max-w-md overflow-y-auto rounded-lg bg-white p-6">
         <h3 className="font-display text-xl text-severity-high">Eliminare questo account?</h3>
         <p className="mt-3 text-sm text-ink-soft">
           Stai per eliminare definitivamente l&apos;account <strong>{user.email}</strong>. Verranno cancellati in

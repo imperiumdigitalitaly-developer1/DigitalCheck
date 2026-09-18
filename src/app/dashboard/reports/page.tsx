@@ -55,10 +55,14 @@ export default function ReportsPage() {
         <div className="mt-6 space-y-3">
           {reports.map((r) => (
             <div key={r.scanId} className="flex items-center justify-between gap-4 rounded-lg border border-line bg-white p-4">
-              <div className="flex items-center gap-4">
-                {r.overallScore != null && <ScoreCircle score={r.overallScore} size={44} />}
-                <div>
-                  <Link href={`/dashboard/site/${r.siteId}`} className="font-medium hover:text-accent">
+              <div className="flex min-w-0 items-center gap-4">
+                {r.overallScore != null && (
+                  <div className="shrink-0">
+                    <ScoreCircle score={r.overallScore} size={44} />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <Link href={`/dashboard/site/${r.siteId}`} className="tap-target break-words font-medium hover:text-accent">
                     {r.url}
                   </Link>
                   <p className="text-sm text-ink-soft">{new Date(r.date).toLocaleDateString("it-IT")}</p>
@@ -68,7 +72,7 @@ export default function ReportsPage() {
                 href={`/api/reports/${r.scanId}/pdf`}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-md border border-line px-3 py-1.5 text-sm hover:border-accent"
+                className="tap-target shrink-0 rounded-md border border-line px-3 py-1.5 text-sm hover:border-accent"
               >
                 Scarica PDF
               </a>

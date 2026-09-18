@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Message {
   role: "user" | "assistant";
@@ -12,6 +12,13 @@ export function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  // Porta in vista l'ultimo messaggio: senza, dopo qualche scambio la
+  // risposta resta sotto il bordo dell'area scrollabile.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "end" });
+  }, [messages, loading, open]);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -43,15 +50,15 @@ export function ChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="app-touch fixed bottom-4 right-4 z-50">
       {open && (
-        <div className="mb-3 flex h-96 w-80 max-w-[90vw] flex-col rounded-lg border border-line bg-white shadow-xl">
-          <div className="flex items-center justify-between rounded-t-lg border-b border-line bg-ink px-4 py-3">
+        <div className="mb-3 flex h-[min(24rem,calc(100dvh-6.5rem))] w-[min(20rem,calc(100vw-2rem))] flex-col rounded-lg border border-line bg-white shadow-xl">
+          <div className="flex items-center justify-between rounded-t-lg border-b border-line bg-ink py-1 pl-4 pr-4">
             <span className="font-display text-sm text-paper">Assistente DigitalCheck</span>
             <button
               onClick={() => setOpen(false)}
               aria-label="Chiudi assistente"
-              className="text-paper/70 hover:text-paper"
+              className="-mr-3 flex h-11 w-11 items-center justify-center text-paper/70 hover:text-paper"
             >
               ✕
             </button>
@@ -68,6 +75,7 @@ export function ChatWidget() {
               </p>
             ))}
             {loading && <p className="text-sm text-ink-soft">...</p>}
+            <div ref={endRef} />
           </div>
           <form onSubmit={handleSend} className="flex gap-2 border-t border-line p-3">
             <input
@@ -75,12 +83,12 @@ export function ChatWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Scrivi un messaggio..."
-              className="flex-1 rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-accent"
+              className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-base outline-none focus:border-accent"
             />
             <button
               type="submit"
               disabled={loading}
-              className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-paper hover:bg-accent-deep disabled:opacity-60"
+              className="min-h-[44px] rounded-md bg-accent px-3 py-2 text-sm font-medium text-paper hover:bg-accent-deep disabled:opacity-60"
             >
               Invia
             </button>
