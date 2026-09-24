@@ -1,4 +1,6 @@
 import type { DigitalCheckReport } from "@/types";
+import { STATUS_LABEL } from "@/lib/analysis/constants";
+import { CATEGORY_LABELS } from "@/lib/category-labels";
 import { callGemini } from "./gemini-client";
 
 export interface AdvisorResult {
@@ -6,35 +8,60 @@ export interface AdvisorResult {
   unavailableReason?: string;
 }
 
+// Contesto per l'assistente AI Pro (brief audit sezione 29: deve poter
+// rispondere a "perche' ho 64 in Performance?", "quali sono i problemi
+// SEO?", ecc.): fonte unica e' il sistema di audit multi-categoria
+// (report.analyses), con findings/gravita' PER CATEGORIA, non piu' solo
+// un elenco piatto dei primi 8 problemi complessivi.
 function buildContext(report: DigitalCheckReport): string {
-  const topIssues = report.issues
-    .slice(0, 8)
-    .map((i) => `- [${i.severity}] ${i.title}: ${i.description}`)
-    .join("\n");
-
   const parts = [
     `Sito: ${report.requestedUrl}`,
     `Tipo di attivita': ${report.businessType}`,
     `Obiettivo dichiarato: ${report.goal}`,
-    `Digital Score (SEO/tecnico): ${report.overallScore}/100`,
-    `Riepilogo: ${report.businessImpactSummary}`,
-    `Problemi rilevati nell'ultima scansione:\n${topIssues}`,
+    `DigitalCheck Score complessivo: ${report.overallScore}/100`,
+    `Riepilogo esecutivo: ${report.businessImpactSummary}`,
   ];
+
+  for (const a of report.analyses) {
+    const topFindings = a.findings
+      .slice(0, 6)
+      .map((f) => `  - [${f.severity}] ${f.title}: ${f.explanation}`)
+      .join("\n");
+    parts.push(
+      `${CATEGORY_LABELS[a.category]}: ${a.score}/100 (${STATUS_LABEL[a.status]}).${
+        topFindings ? `\nProblemi rilevati in questa categoria:\n${topFindings}` : " Nessun problema rilevante rilevato."
+      }`
+    );
+  }
 
   // GEO (brief GEO sezione 15): stessa fonte dati del report, mai un
   // contesto separato o inventato.
   if (report.geo) {
     const topGeoIssues = report.geo.issues
       .slice(0, 6)
-      .map((i) => `- [${i.severity}] ${i.title} (${i.category}): ${i.description}`)
+      .map((i) => `  - [${i.severity}] ${i.title} (${i.category}): ${i.description}`)
       .join("\n");
     parts.push(
-      `GEO Score (predisposizione ad essere compreso/citato da motori di ricerca generativi e AI answer engine): ${report.geo.overallScore}/100${
+      `GEO (predisposizione ad essere compreso/citato da motori di ricerca generativi e AI answer engine): ${report.geo.overallScore}/100${
         report.geo.localApplicable ? "" : " (categoria Local GEO non applicabile a questo sito)"
-      }`,
-      `Problemi GEO rilevati:\n${topGeoIssues || "(nessuno)"}`
+      }.\nProblemi GEO rilevati:\n${topGeoIssues || "  (nessuno)"}`
     );
     if (report.geo.aiComparisonNote) parts.push(`Confronto SEO/GEO: ${report.geo.aiComparisonNote}`);
+  }
+
+  if (report.crossAnalysis.length > 0) {
+    parts.push(
+      `Correlazioni individuate tra categorie:\n${report.crossAnalysis.map((c) => `  - ${c.pairLabel}: ${c.note}`).join("\n")}`
+    );
+  }
+
+  if (report.actionPlan.length > 0) {
+    parts.push(
+      `Piano d'azione prioritizzato (in ordine):\n${report.actionPlan
+        .slice(0, 10)
+        .map((i) => `  ${i.priority}. [${i.severity}] ${i.title} — ${i.action}`)
+        .join("\n")}`
+    );
   }
 
   return parts.join("\n");

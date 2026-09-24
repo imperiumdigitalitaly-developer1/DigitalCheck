@@ -44,7 +44,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       errorMessage: scan.errorMessage,
       categoryScores: scan.scores.map((s) => ({ category: s.category, score: s.score, weight: s.weight })),
       issueCount: scan.issues.length,
-      highSeverityCount: scan.issues.filter((i) => i.severity === "HIGH").length,
+      highSeverityCount: scan.issues.filter((i) => i.severity === "HIGH" || i.severity === "CRITICAL").length,
       geoOverallScore: scan.geoAnalysis?.overallScore ?? null,
     })),
   });

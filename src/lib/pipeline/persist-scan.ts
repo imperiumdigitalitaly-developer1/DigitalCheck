@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { runScanPipeline } from "@/lib/pipeline/run-scan";
-import { fromDbBusinessType, toDbSeverity } from "@/lib/db/enum-map";
+import { fromDbBusinessType, toDbSeverity5 } from "@/lib/db/enum-map";
 import { toDbGeoCategory, toDbGeoSeverity } from "@/lib/geo/geo-enum-map";
 import { getPlanLimits } from "@/lib/billing/plan-limits";
 import type { BusinessGoal } from "@/types";
@@ -47,50 +47,76 @@ export async function persistScanForSite(site: Site, owner: User): Promise<Persi
       orderBy: { startedAt: "desc" },
     });
 
-    const geo = result.report.geo;
+    const { report } = result;
+    const geo = report.geo;
+
+    // Priorita' sequenziale globale sulle raccomandazioni (tutte le
+    // categorie insieme): coerente con l'ordinamento gia' applicato in
+    // src/lib/analysis/action-plan.ts, cosi' priority riflette davvero
+    // l'ordine di importanza e non solo l'ordine di categoria.
+    const allRecommendations = report.analyses.flatMap((a) => a.recommendations);
 
     await prisma.$transaction([
       prisma.scan.update({
         where: { id: scan.id },
         data: {
           status: "COMPLETED",
-          overallScore: result.report.overallScore,
+          overallScore: report.overallScore,
           pagesCrawled: result.crawl.pages.length,
           completedAt: new Date(),
-          businessImpactSummary: result.report.businessImpactSummary,
-          strengths: result.report.strengths,
-          unverifiable: result.report.unverifiable,
-          aiConversionAnalysis: result.report.aiAnalysis?.conversionAnalysis ?? null,
-          aiContentAnalysis: result.report.aiAnalysis?.contentAnalysis ?? null,
-          aiPriorities: result.report.aiAnalysis?.priorities ?? [],
+          businessImpactSummary: report.businessImpactSummary,
+          strengths: report.strengths,
+          unverifiable: report.unverifiable,
+          aiConversionAnalysis: report.aiAnalysis?.conversionAnalysis ?? null,
+          aiContentAnalysis: report.aiAnalysis?.contentAnalysis ?? null,
+          aiPriorities: report.aiAnalysis?.priorities ?? [],
+          auditExecutiveSummary: report.businessImpactSummary,
+          auditCrossAnalysis: report.crossAnalysis as unknown as Prisma.InputJsonValue,
         },
       }),
       prisma.scanScore.createMany({
-        data: result.scoring.categoryScores.map((c) => ({
+        data: report.analyses.map((a) => ({
           scanId: scan.id,
-          category: c.category,
-          score: c.score,
-          weight: c.weight,
+          category: a.category,
+          score: a.score,
+          weight: report.masterScoreWeights[a.category] ?? 0,
+          status: a.status,
+          subScores: a.subScores as unknown as Prisma.InputJsonValue,
+          notes: a.notes,
+          dataAvailability: a.dataAvailability,
+          shortSummary: a.shortSummary,
         })),
       }),
       prisma.scanIssue.createMany({
-        data: result.report.issues.map((issue) => ({
-          scanId: scan.id,
-          title: issue.title,
-          description: issue.description,
-          whyItMatters: issue.whyItMatters,
-          recommendation: issue.recommendation,
-          evidence: issue.evidence,
-          category: issue.category,
-          severity: toDbSeverity(issue.severity),
-        })),
+        data: report.analyses.flatMap((a) =>
+          a.findings.map((f) => ({
+            scanId: scan.id,
+            title: f.title,
+            // description = impatto (area/effetto potenziale), whyItMatters
+            // = spiegazione: mappatura 1:1 con Finding, cosi' la
+            // ricostruzione (build-report-from-scan.ts) non perde il campo
+            // impact duplicandolo con explanation.
+            description: f.impact,
+            whyItMatters: f.explanation,
+            recommendation: a.recommendations.find((r) => r.title === f.title)?.action ?? f.impact,
+            evidence: f.evidence,
+            category: f.category,
+            severity: toDbSeverity5(f.severity),
+          }))
+        ),
       }),
       prisma.recommendation.createMany({
-        data: result.report.recommendedActions.map((action, index) => ({
+        data: allRecommendations.map((rec, index) => ({
           scanId: scan.id,
-          title: action,
-          detail: action,
+          title: rec.title,
+          detail: rec.action,
           priority: index + 1,
+          category: rec.category,
+          severity: toDbSeverity5(rec.severity),
+          explanation: rec.explanation,
+          impact: rec.impact,
+          action: rec.action,
+          evidence: rec.evidence,
         })),
       }),
       ...(geo
@@ -106,6 +132,7 @@ export async function persistScanForSite(site: Site, owner: User): Promise<Persi
                 answerabilityQueries: geo.answerabilityQueries as unknown as Prisma.InputJsonValue,
                 aiSummary: geo.aiSummary,
                 aiComparisonNote: geo.aiComparisonNote,
+                shortSummary: report.geoShortSummary,
                 categoryScores: {
                   createMany: {
                     data: geo.categoryScores.map((c) => ({
@@ -143,20 +170,23 @@ export async function persistScanForSite(site: Site, owner: User): Promise<Persi
     }
 
     if (previousScan?.overallScore != null) {
-      const delta = result.report.overallScore - previousScan.overallScore;
+      const delta = report.overallScore - previousScan.overallScore;
       if (Math.abs(delta) >= 3) {
         await prisma.notification.create({
           data: {
             userId: site.ownerId,
             siteId: site.id,
             type: "score_change",
-            message: `Il Digital Score di ${site.url} e' passato da ${previousScan.overallScore} a ${result.report.overallScore}.`,
+            message: `Il Digital Score di ${site.url} e' passato da ${previousScan.overallScore} a ${report.overallScore}.`,
           },
         });
       }
     }
 
-    const highSeverityCount = result.report.issues.filter((i) => i.severity === "high").length;
+    const highSeverityCount = report.analyses.reduce(
+      (sum, a) => sum + a.findings.filter((f) => f.severity === "critical" || f.severity === "high").length,
+      0
+    );
     if (highSeverityCount > 0) {
       await prisma.notification.create({
         data: {

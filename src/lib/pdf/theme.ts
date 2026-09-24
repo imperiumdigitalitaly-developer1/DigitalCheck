@@ -1,6 +1,7 @@
 import { rgb } from "pdf-lib";
 import type { IssueCategory, IssueSeverity } from "@/types";
 import type { GeoIssueSeverity } from "@/lib/geo/geo-types";
+import type { Severity } from "@/lib/analysis/types";
 
 /**
  * Palette del PDF: stessi valori esadecimali di tailwind.config.js, cosi'
@@ -62,6 +63,27 @@ export const GEO_SEVERITY_LABEL: Record<GeoIssueSeverity, string> = {
   high: "Alto",
   medium: "Medio",
   low: "Basso",
+};
+
+// 5 livelli (brief audit sezione 41, Finding/Recommendation del sistema di
+// audit multi-categoria — src/lib/analysis/types.ts): riusa la stessa
+// palette del GEO per i 4 livelli in comune, aggiunge solo "info" (grigio
+// piu' neutro del "low"), cosi' il PDF Pro non introduce un terzo
+// linguaggio visivo di severita' oltre a SEO (3 livelli, legacy) e GEO.
+export const SEVERITY5_COLOR: Record<Severity, ReturnType<typeof rgb>> = {
+  critical: GEO_SEVERITY_COLOR.critical,
+  high: GEO_SEVERITY_COLOR.high,
+  medium: GEO_SEVERITY_COLOR.medium,
+  low: GEO_SEVERITY_COLOR.low,
+  info: rgb(0x9a / 255, 0x9d / 255, 0xa3 / 255),
+};
+
+export const SEVERITY5_SOFT_COLOR: Record<Severity, ReturnType<typeof rgb>> = {
+  critical: GEO_SEVERITY_SOFT_COLOR.critical,
+  high: GEO_SEVERITY_SOFT_COLOR.high,
+  medium: GEO_SEVERITY_SOFT_COLOR.medium,
+  low: GEO_SEVERITY_SOFT_COLOR.low,
+  info: rgb(0xf0 / 255, 0xf0 / 255, 0xf1 / 255),
 };
 
 const SCORE_STOPS: { max: number; color: ReturnType<typeof rgb> }[] = [

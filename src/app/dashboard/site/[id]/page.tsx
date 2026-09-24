@@ -379,7 +379,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
                   <p className="text-sm text-ink-soft">{new Date(scan.startedAt).toLocaleString("it-IT")}</p>
                   <p className="text-sm">
                     {scan.status === "COMPLETED"
-                      ? `SEO ${scan.overallScore}${scan.geoOverallScore != null ? ` · GEO ${scan.geoOverallScore}` : ""} · ${scan.issueCount} problemi (${scan.highSeverityCount} alta priorita')`
+                      ? `Score ${scan.overallScore}${scan.geoOverallScore != null ? ` · GEO ${scan.geoOverallScore}` : ""} · ${scan.issueCount} problemi (${scan.highSeverityCount} alta priorita')`
                       : scan.status === "FAILED"
                         ? `Fallito: ${scan.errorMessage}`
                         : scan.status}

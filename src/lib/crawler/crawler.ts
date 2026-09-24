@@ -15,10 +15,43 @@ interface FetchSafeOptions {
  * (redirect:"manual", cosi' possiamo ricontrollare ogni hop noi stessi),
  * timeout, limite dimensione risposta, e validazione del Content-Type.
  */
+interface FetchSafeResult {
+  finalUrl: string;
+  statusCode: number;
+  body: string;
+  contentType: string;
+  responseHeaders: Record<string, string>;
+  redirectCount: number;
+}
+
+// Header di risposta rilevanti per l'analisi Technical (brief audit,
+// sezione 11 "Security Headers"/"HTTP"): solo un sottoinsieme scelto, non
+// l'intero oggetto Headers (che puo' contenere valori non pertinenti).
+const CAPTURED_HEADER_NAMES = [
+  "content-security-policy",
+  "x-content-type-options",
+  "x-frame-options",
+  "referrer-policy",
+  "permissions-policy",
+  "strict-transport-security",
+  "cache-control",
+  "content-encoding",
+  "server",
+];
+
+function captureHeaders(headers: Headers): Record<string, string> {
+  const captured: Record<string, string> = {};
+  for (const name of CAPTURED_HEADER_NAMES) {
+    const value = headers.get(name);
+    if (value) captured[name] = value;
+  }
+  return captured;
+}
+
 async function fetchSafe(
   targetUrl: string,
   options: FetchSafeOptions = {}
-): Promise<{ finalUrl: string; statusCode: number; body: string; contentType: string }> {
+): Promise<FetchSafeResult> {
   const maxBytes = options.maxBytes ?? MAX_RESPONSE_BYTES;
   const timeoutMs = options.timeoutMs ?? TIMEOUT_MS;
 
@@ -47,7 +80,14 @@ async function fetchSafe(
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");
       if (!location) {
-        return { finalUrl: currentUrl, statusCode: response.status, body: "", contentType: "" };
+        return {
+          finalUrl: currentUrl,
+          statusCode: response.status,
+          body: "",
+          contentType: "",
+          responseHeaders: captureHeaders(response.headers),
+          redirectCount,
+        };
       }
       const nextUrl = new URL(location, currentUrl).toString();
       const check = await checkUrlIsSafe(nextUrl);
@@ -59,8 +99,9 @@ async function fetchSafe(
     }
 
     const contentType = response.headers.get("content-type") ?? "";
+    const responseHeaders = captureHeaders(response.headers);
     if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
-      return { finalUrl: currentUrl, statusCode: response.status, body: "", contentType };
+      return { finalUrl: currentUrl, statusCode: response.status, body: "", contentType, responseHeaders, redirectCount };
     }
 
     const contentLength = Number(response.headers.get("content-length") ?? "0");
@@ -72,7 +113,7 @@ async function fetchSafe(
     const reader = response.body?.getReader();
     if (!reader) {
       const text = await response.text();
-      return { finalUrl: currentUrl, statusCode: response.status, body: text, contentType };
+      return { finalUrl: currentUrl, statusCode: response.status, body: text, contentType, responseHeaders, redirectCount };
     }
 
     let received = 0;
@@ -88,7 +129,7 @@ async function fetchSafe(
       chunks.push(value);
     }
     const body = Buffer.concat(chunks.map((c) => Buffer.from(c))).toString("utf-8");
-    return { finalUrl: currentUrl, statusCode: response.status, body, contentType };
+    return { finalUrl: currentUrl, statusCode: response.status, body, contentType, responseHeaders, redirectCount };
   }
 
   throw new Error("Troppi redirect");
@@ -181,10 +222,7 @@ export async function crawlSite(requestedUrl: string, options: CrawlOptions): Pr
   return result;
 }
 
-function toPage(
-  requestedUrl: string,
-  fetched: { finalUrl: string; statusCode: number; body: string; contentType: string }
-): CrawledPage {
+function toPage(requestedUrl: string, fetched: FetchSafeResult): CrawledPage {
   return {
     url: requestedUrl,
     finalUrl: fetched.finalUrl,
@@ -193,6 +231,8 @@ function toPage(
     contentType: fetched.contentType,
     fetchedAt: new Date().toISOString(),
     sizeBytes: Buffer.byteLength(fetched.body, "utf-8"),
+    responseHeaders: fetched.responseHeaders,
+    redirectCount: fetched.redirectCount,
   };
 }
 

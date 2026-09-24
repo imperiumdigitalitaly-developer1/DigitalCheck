@@ -1,4 +1,4 @@
-import { scoreLabel } from "@/lib/scoring/weights";
+import { STATUS_LABEL, scoreToStatus } from "@/lib/analysis/constants";
 
 function colorForScore(score: number): string {
   if (score < 40) return "#B4483F";
@@ -45,7 +45,7 @@ export function ScoreCircle({ score, size = 152 }: { score: number; size?: numbe
         </text>
       </svg>
       <span className="text-sm font-medium" style={{ color }}>
-        {scoreLabel(score)}
+        {STATUS_LABEL[scoreToStatus(score)]}
       </span>
     </div>
   );

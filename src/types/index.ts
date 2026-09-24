@@ -1,4 +1,7 @@
 import type { GeoReport } from "@/lib/geo/geo-types";
+import type { AnalysisResult } from "@/lib/analysis/types";
+import type { CrossAnalysisInsight } from "@/lib/analysis/cross-analysis";
+import type { ActionPlanItem } from "@/lib/analysis/action-plan";
 
 export type BusinessType =
   | "bnb"
@@ -42,6 +45,14 @@ export interface CrawledPage {
   contentType: string;
   fetchedAt: string;
   sizeBytes: number;
+  // Header di risposta HTTP della richiesta finale (dopo i redirect),
+  // solo quelli rilevanti per l'analisi Technical (sicurezza/caching) —
+  // brief audit sezione 11. Mai usati per altro che ispezione pubblica:
+  // nessuna richiesta aggiuntiva viene fatta per raccoglierli, sono un
+  // sottoprodotto del fetch gia' eseguito dal crawler.
+  responseHeaders: Record<string, string>;
+  // Numero di redirect seguiti per raggiungere finalUrl (0 = nessuno).
+  redirectCount: number;
 }
 
 export interface CrawlResult {
@@ -131,6 +142,23 @@ export interface DigitalCheckReport {
   // stesso troncamento Free/PDF. Null solo se lo scan e' fallito prima che
   // il crawl producesse dati (mai un punteggio inventato).
   geo: GeoReport | null;
+  // Frase sintetica per la dashboard executive (brief audit sezione 14),
+  // parallela a AnalysisResult.shortSummary ma per il GEO (che non ha una
+  // propria interpretazione AI a livello di singola frase — vedi
+  // src/lib/ai/audit-analyzer.ts). Null solo se geo e' null.
+  geoShortSummary: string | null;
+
+  // ---------------------------------------------------------------------
+  // Sistema di audit multi-categoria (brief "audit professionale"): fonte
+  // di verita' per dashboard executive e PDF Pro. categoryScores/issues/
+  // recommendedActions sopra restano popolati (derivati da analyses) solo
+  // per compatibilita' con consumer esistenti (Gestionale, storico) — la
+  // UI e il PDF nuovi leggono da qui.
+  // ---------------------------------------------------------------------
+  analyses: AnalysisResult[]; // le 7 categorie SEO-side, in ordine CategoryKey
+  masterScoreWeights: Partial<Record<CategoryKey | "geo", number>>;
+  crossAnalysis: CrossAnalysisInsight[];
+  actionPlan: ActionPlanItem[];
 
   // Presenti solo quando il report e' stato troncato per il piano Free
   // (vedi src/lib/billing/report-tiering.ts): permettono all'interfaccia

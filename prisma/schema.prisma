@@ -28,10 +28,16 @@ enum ScanStatus {
   FAILED
 }
 
+// CRITICAL e INFO aggiunti per il sistema di audit multi-categoria (brief
+// "audit professionale", sezione 41: severita' centralizzata a 5 livelli).
+// HIGH/MEDIUM/LOW restano invariati: dati storici e ScanIssue esistenti
+// non vengono toccati, e' un'estensione additiva dell'enum.
 enum IssueSeverity {
+  CRITICAL
   HIGH
   MEDIUM
   LOW
+  INFO
 }
 
 enum BusinessType {
@@ -166,6 +172,10 @@ model Scan {
   siteId                String
   site                  Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
   status                ScanStatus @default(REQUESTED)
+  // overallScore e' il DigitalCheck Score complessivo (audit brief, sezione
+  // 13): media pesata delle 7 categorie SEO-side + GEO, non solo SEO-side
+  // come nella versione precedente del prodotto — vedi
+  // src/lib/analysis/master-score.ts per la metodologia documentata.
   overallScore          Int?
   pagesCrawled          Int        @default(0)
   businessImpactSummary String?
@@ -179,6 +189,15 @@ model Scan {
   aiConversionAnalysis String?
   aiContentAnalysis    String?
   aiPriorities         String[] @default([])
+
+  // Interpretazione AI a livello di intero audit (brief audit, sezioni 17
+  // "Executive Summary" e 26 "Cross-Analysis"): generata una sola volta per
+  // scan a partire dai risultati GIA' calcolati delle 8 categorie (mai
+  // dati inventati — vedi src/lib/ai/audit-analyzer.ts). auditCrossAnalysis
+  // e' un array di correlazioni {pairLabel, note}; forma libera perche' il
+  // numero di correlazioni emesse dipende dai dati di QUESTO scan.
+  auditExecutiveSummary String?
+  auditCrossAnalysis    Json?
 
   errorCode       String?
   errorMessage    String?
@@ -228,6 +247,10 @@ model GeoAnalysis {
   // (brief sezione 36).
   aiSummary        String?
   aiComparisonNote String? // confronto dinamico SEO vs GEO (brief sezione 19/39)
+  // Frase sintetica per la dashboard executive dell'audit multi-categoria
+  // (brief audit sezione 14), parallela a ScanScore.shortSummary per le
+  // altre 7 categorie.
+  shortSummary     String?
 
   createdAt DateTime @default(now())
 
@@ -267,7 +290,11 @@ model GeoIssue {
   @@index([geoAnalysisId])
 }
 
-// Un punteggio per categoria (SEO, Performance, Mobile, ...) per scan.
+// Un punteggio per categoria (SEO, Performance, Mobile, ...) per scan —
+// una riga per ciascuna delle 7 categorie CategoryKey (brief audit,
+// sezione 40 "dati strutturati"). I campi sotto (status/subScores/...)
+// sono l'estensione additiva per l'audit multi-categoria: nullable,
+// nessun dato storico esistente e' interessato.
 model ScanScore {
   id       String @id @default(cuid())
   scanId   String
@@ -275,6 +302,22 @@ model ScanScore {
   category String
   score    Int
   weight   Float
+
+  // Stato centralizzato (brief sezione 4): "excellent"|"good"|
+  // "needs_improvement"|"poor"|"critical" — vedi src/lib/analysis/constants.ts.
+  status String?
+  // Sottopunteggi della categoria (brief sezioni 5-11, es. per SEO: On-page,
+  // Technical SEO, Indexability, Structured Data, Internal Linking, Content
+  // Signals): SubScore[] = [{key, label, score, weight}]. Json perche' la
+  // forma cambia per categoria, come per GeoAnalysis.entities.
+  subScores Json?
+  notes String?
+  // "verified"|"partial"|"unavailable"|"not_applicable" (brief sezione 34):
+  // distingue dato misurato da stima, senza inventare un 0.
+  dataAvailability String?
+  // Una frase sintetica per la dashboard executive (brief sezione 14):
+  // MAI problemi/consigli, solo descrizione generale.
+  shortSummary String?
 
   @@index([scanId])
 }
@@ -295,6 +338,12 @@ model ScanIssue {
   @@index([scanId])
 }
 
+// Estesa (brief audit, sezione 42 "centralizzare le raccomandazioni") con i
+// campi di un vero Recommendation: category/severity/explanation/impact/
+// action/evidence. title+detail+priority restano per compatibilita' con le
+// righe gia' persistite prima dell'audit multi-categoria (dove detail era
+// una copia di title); le nuove colonne sono nullable e non toccano quelle
+// righe storiche.
 model Recommendation {
   id        String   @id @default(cuid())
   scanId    String
@@ -302,6 +351,12 @@ model Recommendation {
   title     String
   detail    String
   priority  Int
+  category    String?
+  severity    IssueSeverity?
+  explanation String?
+  impact      String?
+  action      String?
+  evidence    String?
   createdAt DateTime @default(now())
 
   @@index([scanId])
