@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/db/prisma";
 import { runScanPipeline } from "@/lib/pipeline/run-scan";
 import { fromDbBusinessType, toDbSeverity } from "@/lib/db/enum-map";
+import { toDbGeoCategory, toDbGeoSeverity } from "@/lib/geo/geo-enum-map";
 import { getPlanLimits } from "@/lib/billing/plan-limits";
 import type { BusinessGoal } from "@/types";
-import type { Site, User } from "@prisma/client";
+import { Prisma, type Site, type User } from "@prisma/client";
 
 export interface PersistScanResult {
   ok: boolean;
@@ -45,6 +46,8 @@ export async function persistScanForSite(site: Site, owner: User): Promise<Persi
       where: { siteId: site.id, status: "COMPLETED", id: { not: scan.id } },
       orderBy: { startedAt: "desc" },
     });
+
+    const geo = result.report.geo;
 
     await prisma.$transaction([
       prisma.scan.update({
@@ -90,6 +93,47 @@ export async function persistScanForSite(site: Site, owner: User): Promise<Persi
           priority: index + 1,
         })),
       }),
+      ...(geo
+        ? [
+            prisma.geoAnalysis.create({
+              data: {
+                scanId: scan.id,
+                overallScore: geo.overallScore,
+                localApplicable: geo.localApplicable,
+                strengths: geo.strengths,
+                entities: geo.entities as unknown as Prisma.InputJsonValue,
+                informationCompleteness: geo.informationCompleteness as unknown as Prisma.InputJsonValue,
+                answerabilityQueries: geo.answerabilityQueries as unknown as Prisma.InputJsonValue,
+                aiSummary: geo.aiSummary,
+                aiComparisonNote: geo.aiComparisonNote,
+                categoryScores: {
+                  createMany: {
+                    data: geo.categoryScores.map((c) => ({
+                      category: toDbGeoCategory(c.category),
+                      score: c.score,
+                      weight: c.weight,
+                      applicable: c.applicable,
+                      notes: c.notes,
+                    })),
+                  },
+                },
+                issues: {
+                  createMany: {
+                    data: geo.issues.map((issue) => ({
+                      category: toDbGeoCategory(issue.category),
+                      title: issue.title,
+                      description: issue.description,
+                      whyItMatters: issue.whyItMatters,
+                      recommendation: issue.recommendation,
+                      example: issue.example,
+                      severity: toDbGeoSeverity(issue.severity),
+                    })),
+                  },
+                },
+              },
+            }),
+          ]
+        : []),
     ]);
 
     if (site.monitoringEnabled) {

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       scans: {
         orderBy: { startedAt: "desc" },
         take: 20,
-        include: { scores: true, issues: true },
+        include: { scores: true, issues: true, geoAnalysis: true },
       },
     },
   });
@@ -45,6 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       categoryScores: scan.scores.map((s) => ({ category: s.category, score: s.score, weight: s.weight })),
       issueCount: scan.issues.length,
       highSeverityCount: scan.issues.filter((i) => i.severity === "HIGH").length,
+      geoOverallScore: scan.geoAnalysis?.overallScore ?? null,
     })),
   });
 }

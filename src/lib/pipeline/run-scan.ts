@@ -3,6 +3,9 @@ import { analyzeSeoFacts } from "@/lib/analysis/seo-analyzer";
 import { computeScoring, type ScoringOutput } from "@/lib/scoring/scoring-engine";
 import { scoreLabel } from "@/lib/scoring/weights";
 import { runContentAnalysis } from "@/lib/ai/content-analyzer";
+import { computeGeoAnalysis } from "@/lib/geo/geo-scoring";
+import { runGeoAiAnalysis } from "@/lib/ai/geo-analyzer";
+import type { GeoReport } from "@/lib/geo/geo-types";
 import type { BusinessGoal, BusinessType, CrawlResult, DigitalCheckReport, SeoFacts } from "@/types";
 
 export interface ScanPipelineSuccess {
@@ -43,15 +46,43 @@ export async function runScanPipeline(
 
   const facts = analyzeSeoFacts(crawl);
   const scoring = await computeScoring({ facts, crawl, businessType, url });
-  const { analysis: aiAnalysis, unavailableReason } = await runContentAnalysis(
-    facts,
-    crawl,
-    businessType,
-    goal
-  );
+
+  // GEO: motore data-driven puro (nessuna chiamata di rete/AI), quindi
+  // sincrono — deve essere pronto prima della chiamata AI GEO, che ne
+  // interpreta i risultati (brief GEO sezione 36).
+  const geoScoring = computeGeoAnalysis(crawl, facts, businessType);
+
+  // Le due chiamate AI (contenuto SEO, interpretazione GEO) sono
+  // indipendenti tra loro: eseguite in parallelo per non raddoppiare il
+  // tempo di scan (brief GEO sezione 25).
+  const [{ analysis: aiAnalysis, unavailableReason }, geoAi] = await Promise.all([
+    runContentAnalysis(facts, crawl, businessType, goal),
+    runGeoAiAnalysis(
+      geoScoring,
+      scoring.overallScore,
+      scoring.issues.filter((i) => i.severity === "high").slice(0, 5).map((i) => i.title),
+      businessType,
+      goal
+    ),
+  ]);
 
   const unverifiable = [...scoring.unverifiable];
   if (unavailableReason) unverifiable.push(unavailableReason);
+  if (geoAi.unavailableReason) unverifiable.push(geoAi.unavailableReason);
+
+  const geo: GeoReport = {
+    overallScore: geoScoring.overallScore,
+    localApplicable: geoScoring.localApplicable,
+    categoryScores: geoScoring.categoryScores,
+    issues: geoScoring.issues,
+    strengths: geoScoring.strengths,
+    entities: geoScoring.entities,
+    informationCompleteness: geoScoring.informationCompleteness,
+    answerabilityQueries: geoScoring.answerabilityQueries,
+    aiSummary: geoAi.summary,
+    aiComparisonNote: geoAi.comparisonNote,
+    generatedAt: new Date().toISOString(),
+  };
 
   const categoryScores = scoring.categoryScores.map((c) =>
     c.category === "content" && aiAnalysis ? { ...c, verified: true, notes: undefined } : c
@@ -89,6 +120,7 @@ export async function runScanPipeline(
       )}). Analisi AI non disponibile in questa scansione: le indicazioni sotto si basano sui controlli tecnici automatici.`,
     aiAnalysis,
     unverifiable,
+    geo,
   };
 
   return { ok: true, crawl, facts, scoring, report };

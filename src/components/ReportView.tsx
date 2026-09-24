@@ -5,6 +5,7 @@ import type { DigitalCheckReport, IssueSeverity } from "@/types";
 import { ScoreCircle } from "./ScoreCircle";
 import { ConsultationModal } from "./ConsultationModal";
 import { UpgradeCard } from "./UpgradeCard";
+import { GeoReportSection } from "./GeoReportSection";
 import { CATEGORY_LABELS } from "@/lib/category-labels";
 import { getPlanFeatures } from "@/lib/billing/plan-config";
 
@@ -184,6 +185,9 @@ export function ReportView({
           </p>
         )}
       </section>
+
+      {/* GEO — Generative Engine Optimization */}
+      {report.geo && <GeoReportSection geo={report.geo} aiEnabled={aiEnabled} onUpgrade={onUpgrade} />}
 
       {/* Unverifiable */}
       {report.unverifiable.length > 0 && (

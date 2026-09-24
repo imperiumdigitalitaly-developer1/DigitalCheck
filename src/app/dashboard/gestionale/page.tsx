@@ -12,6 +12,7 @@ import { ScoreTrendChart } from "@/components/ScoreTrendChart";
 import { AnalyticsPanel } from "@/components/AnalyticsPanel";
 import { SearchConsolePanel } from "@/components/SearchConsolePanel";
 import { CATEGORY_LABELS } from "@/lib/category-labels";
+import { GEO_CATEGORY_LABELS } from "@/lib/geo/geo-labels";
 
 interface MeUser {
   id: string;
@@ -49,8 +50,16 @@ interface OverviewData {
 }
 
 interface MetricsData {
-  points: { scanId: string; date: string; overallScore: number | null; categoryScores: Record<string, number> }[];
+  points: {
+    scanId: string;
+    date: string;
+    overallScore: number | null;
+    categoryScores: Record<string, number>;
+    geoOverallScore: number | null;
+    geoCategoryScores: Record<string, number> | null;
+  }[];
   trendNote: string | null;
+  geoTrendNote: string | null;
 }
 
 interface ConnectionsData {
@@ -482,10 +491,37 @@ function GestionaleView() {
 
           {metrics && metrics.points.length > 0 && (
             <div className="rounded-lg border border-line bg-white p-4 sm:p-6">
-              <h2 className="font-display text-lg">Ultimi punteggi per categoria</h2>
+              <h2 className="font-display text-lg">Ultimi punteggi per categoria (SEO)</h2>
               <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
                 {Object.entries(metrics.points[metrics.points.length - 1]?.categoryScores ?? {}).map(([key, score]) => (
                   <MetricCard key={key} label={CATEGORY_LABELS[key as keyof typeof CATEGORY_LABELS] ?? key} value={score} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-lg border border-line bg-white p-4 sm:p-6">
+            <h2 className="font-display text-lg">Andamento GEO Score</h2>
+            <p className="mt-1 text-xs text-ink-soft">
+              Predisposizione del sito a essere compreso e citato da motori di ricerca generativi e AI answer engine.
+            </p>
+            <div className="mt-4">
+              <ScoreTrendChart
+                points={(metrics?.points ?? []).map((p) => ({ date: p.date, score: p.geoOverallScore }))}
+                label="GEO Score"
+              />
+            </div>
+            {metrics?.geoTrendNote && <p className="mt-3 text-sm text-ink-soft">{metrics.geoTrendNote}</p>}
+          </div>
+
+          {metrics && metrics.points.some((p) => p.geoCategoryScores) && (
+            <div className="rounded-lg border border-line bg-white p-4 sm:p-6">
+              <h2 className="font-display text-lg">Ultimi punteggi per categoria (GEO)</h2>
+              <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+                {Object.entries(
+                  [...metrics.points].reverse().find((p) => p.geoCategoryScores)?.geoCategoryScores ?? {}
+                ).map(([key, score]) => (
+                  <MetricCard key={key} label={GEO_CATEGORY_LABELS[key as keyof typeof GEO_CATEGORY_LABELS] ?? key} value={score} />
                 ))}
               </div>
             </div>

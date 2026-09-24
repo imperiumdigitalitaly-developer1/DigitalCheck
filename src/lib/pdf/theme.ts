@@ -1,5 +1,6 @@
 import { rgb } from "pdf-lib";
 import type { IssueCategory, IssueSeverity } from "@/types";
+import type { GeoIssueSeverity } from "@/lib/geo/geo-types";
 
 /**
  * Palette del PDF: stessi valori esadecimali di tailwind.config.js, cosi'
@@ -35,6 +36,31 @@ export const SEVERITY_SOFT_COLOR: Record<IssueSeverity, ReturnType<typeof rgb>> 
 export const SEVERITY_LABEL: Record<IssueSeverity, string> = {
   high: "Critico",
   medium: "Alto",
+  low: "Basso",
+};
+
+// 4 livelli per gli issue GEO (brief GEO sezione 16: Critical/High/Medium/
+// Low). "low" usa un grigio neutro invece del blu di SEVERITY_COLOR.low,
+// per restare distinguibile dai 3 livelli SEO quando le due liste
+// compaiono nella stessa pagina (brief GEO sezione 22, pagina combinata).
+export const GEO_SEVERITY_COLOR: Record<GeoIssueSeverity, ReturnType<typeof rgb>> = {
+  critical: rgb(0xb4 / 255, 0x48 / 255, 0x3f / 255),
+  high: rgb(0xc9 / 255, 0x7a / 255, 0x3d / 255),
+  medium: rgb(0x3f / 255, 0x7d / 255, 0x8f / 255),
+  low: rgb(0x6b / 255, 0x6f / 255, 0x76 / 255),
+};
+
+export const GEO_SEVERITY_SOFT_COLOR: Record<GeoIssueSeverity, ReturnType<typeof rgb>> = {
+  critical: rgb(0xf6 / 255, 0xe8 / 255, 0xe6 / 255),
+  high: rgb(0xf8 / 255, 0xed / 255, 0xe0 / 255),
+  medium: rgb(0xe6 / 255, 0xef / 255, 0xf1 / 255),
+  low: rgb(0xea / 255, 0xea / 255, 0xeb / 255),
+};
+
+export const GEO_SEVERITY_LABEL: Record<GeoIssueSeverity, string> = {
+  critical: "Critico",
+  high: "Alto",
+  medium: "Medio",
   low: "Basso",
 };
 

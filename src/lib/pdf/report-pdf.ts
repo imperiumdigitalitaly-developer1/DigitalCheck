@@ -15,6 +15,7 @@ import {
   ISSUE_GOAL_LABEL,
   scoreColor,
 } from "./theme";
+import { drawGeoFreeBlock, drawGeoOverviewPage, drawGeoIssuesPage } from "./geo-section";
 
 const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 } as const;
 
@@ -118,8 +119,11 @@ export async function generateFreeReportPdf(report: DigitalCheckReport): Promise
   canvas.divider();
 
   // ---- Quick overview -------------------------------------------------
+  // Solo 3 categorie (non 6): spazio ridotto per lasciare posto al blocco
+  // GEO sotto (brief GEO sezione 21) senza traboccare la singola pagina
+  // Free (canvas.paginationLocked non crea mai una seconda pagina).
   canvas.kicker("Panoramica");
-  const overviewCategories: CategoryKey[] = ["performance", "seo", "accessibility", "mobile", "conversion", "content"];
+  const overviewCategories: CategoryKey[] = ["seo", "performance", "conversion"];
   const cols = 3;
   const gutter = 12;
   const cardWidth = (CONTENT_WIDTH - gutter * (cols - 1)) / cols;
@@ -170,9 +174,10 @@ export async function generateFreeReportPdf(report: DigitalCheckReport): Promise
   canvas.y = gridTop - rows * (cardHeight + rowGap) + rowGap - 8;
   canvas.divider();
 
-  // ---- Top 3 priorita' --------------------------------------------------
-  canvas.kicker("Le 3 priorita' principali");
-  const topIssues = sortedBySeverity(report.issues).slice(0, 3);
+  // ---- Top priorita' SEO (2, non 3: spazio ridotto per lasciare posto al
+  // blocco GEO sotto — brief GEO sezione 21) ------------------------------
+  canvas.kicker("Priorita' principali");
+  const topIssues = sortedBySeverity(report.issues).slice(0, 2);
   if (topIssues.length === 0) {
     canvas.text("Nessuna criticita' rilevante individuata in questa analisi.", { size: 9.5, color: COLOR.inkSoft, gap: 4 });
   }
@@ -217,6 +222,12 @@ export async function generateFreeReportPdf(report: DigitalCheckReport): Promise
       color: COLOR.inkSoft,
       gap: 4,
     });
+  }
+
+  // ---- GEO (blocco sintetico) -----------------------------------------
+  if (report.geo) {
+    canvas.y -= 4;
+    drawGeoFreeBlock(canvas, report.geo);
   }
 
   // ---- CTA Pro ------------------------------------------------------
@@ -268,6 +279,16 @@ export async function generateProReportPdf(report: DigitalCheckReport): Promise<
   drawInsightsPage(canvas, report);
   canvas.newPage(true);
   drawActionPlanPage(canvas, report);
+
+  // GEO — pagine dedicate (brief GEO sezione 22): solo se lo scan ha
+  // effettivamente prodotto un'analisi GEO (scan storici precedenti
+  // all'introduzione del modulo non ne hanno una).
+  if (report.geo) {
+    canvas.newPage(true);
+    drawGeoOverviewPage(canvas, report.geo);
+    canvas.newPage(true);
+    drawGeoIssuesPage(canvas, report.geo);
+  }
 
   canvas.stampChrome(
     "DigitalCheck - powered by Imperium Digital",

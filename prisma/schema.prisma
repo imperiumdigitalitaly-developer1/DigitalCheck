@@ -48,6 +48,34 @@ enum UsageEventType {
   NEW_SITE
 }
 
+// Le 8 dimensioni GEO core (brief sezione 13) + LOCAL_GEO, applicabile solo
+// alle attivita' locali (brief sezione 9): quando non applicabile il suo
+// peso viene redistribuito sulle altre, non semplicemente azzerato — vedi
+// src/lib/geo/geo-weights.ts.
+enum GeoCategoryKey {
+  AI_ACCESSIBILITY
+  SEMANTIC_UNDERSTANDING
+  ENTITY_CLARITY
+  INFORMATION_COMPLETENESS
+  ANSWERABILITY
+  CONTENT_STRUCTURE
+  TRUST_SIGNALS
+  STRUCTURED_DATA
+  LOCAL_GEO
+}
+
+// Severita' a 4 livelli per gli issue GEO (brief sezione 16: Critical/High/
+// Medium/Low + "Good", quest'ultimo pero' rappresentato come una voce di
+// GeoAnalysis.strengths, non come severita' di un problema). Enum separato
+// da IssueSeverity (usato da ScanIssue) per non alterarne la semantica
+// consolidata sui dati SEO gia' in produzione.
+enum GeoIssueSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -161,8 +189,82 @@ model Scan {
   issues          ScanIssue[]
   recommendations Recommendation[]
   reports         Report[]
+  geoAnalysis     GeoAnalysis?
 
   @@index([siteId, startedAt])
+}
+
+// ---------------------------------------------------------------------
+// GEO (Generative Engine Optimization): predisposizione del sito a essere
+// compreso, citato e sintetizzato da motori di ricerca generativi e AI
+// answer engine. Deliberatamente un modello separato da ScanScore/ScanIssue
+// (brief sezione 2: "GEO non deve essere una copia della SEO"), ma agganciato
+// 1:1 allo stesso Scan — stessa fonte dati di crawl, nessuna doppia
+// architettura (brief sezione 28).
+// ---------------------------------------------------------------------
+
+model GeoAnalysis {
+  id              String  @id @default(cuid())
+  scanId          String  @unique
+  scan            Scan    @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  overallScore    Int
+  localApplicable Boolean @default(false)
+
+  // Segnali positivi rilevati (analogo a Scan.strengths) — corrispondono al
+  // livello "Good" della sezione 16 del brief, mai rappresentato come
+  // severita' di un GeoIssue.
+  strengths String[] @default([])
+
+  // Dati semi-strutturati e contestuali (brief sezioni 3-5): forma libera
+  // perche' la forma cambia per tipo di attivita' (un B&B ha indirizzo/
+  // check-in, un professionista ha albo/qualifiche) — vedi
+  // src/lib/geo/geo-types.ts per la shape TypeScript che li descrive.
+  entities                Json // EntityData: brand, organizzazione, contatti, schema rilevati, sameAs
+  informationCompleteness Json // InformationCompletenessItem[]: domanda -> risposta rilevata / mancante
+  answerabilityQueries    Json // AnswerabilityQuery[]: query generate dal contenuto reale + risposta trovata o no
+
+  // Interpretazione AI (facoltativa, Pro): mai generata senza i dati sopra
+  // gia' calcolati — l'AI interpreta, non sostituisce l'analisi tecnica
+  // (brief sezione 36).
+  aiSummary        String?
+  aiComparisonNote String? // confronto dinamico SEO vs GEO (brief sezione 19/39)
+
+  createdAt DateTime @default(now())
+
+  categoryScores GeoCategoryScore[]
+  issues         GeoIssue[]
+}
+
+model GeoCategoryScore {
+  id            String         @id @default(cuid())
+  geoAnalysisId String
+  geoAnalysis   GeoAnalysis    @relation(fields: [geoAnalysisId], references: [id], onDelete: Cascade)
+  category      GeoCategoryKey
+  score         Int
+  weight        Float
+  // false solo per LOCAL_GEO su attivita' non locali: la riga resta per
+  // trasparenza ("perche' ho 63/100" — brief sezione 37) ma score/weight
+  // non entrano nella somma pesata (weight persistito e' 0 in quel caso).
+  applicable    Boolean        @default(true)
+  notes         String?
+
+  @@index([geoAnalysisId])
+}
+
+model GeoIssue {
+  id             String           @id @default(cuid())
+  geoAnalysisId  String
+  geoAnalysis    GeoAnalysis      @relation(fields: [geoAnalysisId], references: [id], onDelete: Cascade)
+  category       GeoCategoryKey
+  title          String
+  description    String
+  whyItMatters   String
+  recommendation String
+  example        String?
+  severity       GeoIssueSeverity
+  createdAt      DateTime         @default(now())
+
+  @@index([geoAnalysisId])
 }
 
 // Un punteggio per categoria (SEO, Performance, Mobile, ...) per scan.

@@ -1,3 +1,5 @@
+import type { GeoReport } from "@/lib/geo/geo-types";
+
 export type BusinessType =
   | "bnb"
   | "hotel"
@@ -123,6 +125,12 @@ export interface DigitalCheckReport {
   businessImpactSummary: string;
   aiAnalysis: AiAnalysis | null;
   unverifiable: string[]; // elenco esplicito di cio' che non e' stato possibile verificare
+
+  // GEO — Generative Engine Optimization (brief GEO, sezioni 1-2): analisi
+  // separata dalla SEO ma parte dello stesso report, stessa fonte dati,
+  // stesso troncamento Free/PDF. Null solo se lo scan e' fallito prima che
+  // il crawl producesse dati (mai un punteggio inventato).
+  geo: GeoReport | null;
 
   // Presenti solo quando il report e' stato troncato per il piano Free
   // (vedi src/lib/billing/report-tiering.ts): permettono all'interfaccia

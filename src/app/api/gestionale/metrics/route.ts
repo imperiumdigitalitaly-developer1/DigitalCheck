@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getPlanFeatures } from "@/lib/billing/plan-config";
+import { fromDbGeoCategory } from "@/lib/geo/geo-enum-map";
 
 /**
  * Storico dei punteggi per un sito, ricavato dalle scansioni realmente
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     where: { siteId, status: "COMPLETED" },
     orderBy: { startedAt: "asc" },
     take: 30,
-    include: { scores: true },
+    include: { scores: true, geoAnalysis: { include: { categoryScores: true } } },
   });
 
   const points = scans.map((scan) => ({
@@ -37,19 +38,31 @@ export async function GET(request: NextRequest) {
     date: scan.startedAt,
     overallScore: scan.overallScore,
     categoryScores: Object.fromEntries(scan.scores.map((s) => [s.category, s.score])),
+    geoOverallScore: scan.geoAnalysis?.overallScore ?? null,
+    geoCategoryScores: scan.geoAnalysis
+      ? Object.fromEntries(
+          scan.geoAnalysis.categoryScores.filter((c) => c.applicable).map((c) => [fromDbGeoCategory(c.category), c.score])
+        )
+      : null,
   }));
 
-  let trendNote: string | null = null;
-  if (points.length >= 2) {
-    const first = points[0];
-    const last = points[points.length - 1];
-    if (first?.overallScore != null && last?.overallScore != null) {
-      const delta = last.overallScore - first.overallScore;
-      if (delta > 0) trendNote = `Il punteggio complessivo e' migliorato di ${delta} punti dalla prima analisi disponibile.`;
-      else if (delta < 0) trendNote = `Il punteggio complessivo e' peggiorato di ${Math.abs(delta)} punti dalla prima analisi disponibile.`;
-      else trendNote = "Il punteggio complessivo e' rimasto stabile dalla prima analisi disponibile.";
-    }
+  function trendNoteFor(label: string, key: "overallScore" | "geoOverallScore"): string | null {
+    const withScore = points.filter((p) => p[key] != null);
+    if (withScore.length < 2) return null;
+    const first = withScore[0];
+    const last = withScore[withScore.length - 1];
+    const firstScore = first?.[key];
+    const lastScore = last?.[key];
+    if (firstScore == null || lastScore == null) return null;
+    const delta = lastScore - firstScore;
+    if (delta > 0) return `Il punteggio ${label} e' migliorato di ${delta} punti dalla prima analisi disponibile.`;
+    if (delta < 0) return `Il punteggio ${label} e' peggiorato di ${Math.abs(delta)} punti dalla prima analisi disponibile.`;
+    return `Il punteggio ${label} e' rimasto stabile dalla prima analisi disponibile.`;
   }
 
-  return NextResponse.json({ points, trendNote });
+  return NextResponse.json({
+    points,
+    trendNote: trendNoteFor("complessivo", "overallScore"),
+    geoTrendNote: trendNoteFor("GEO", "geoOverallScore"),
+  });
 }

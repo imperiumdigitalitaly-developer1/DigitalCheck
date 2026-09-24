@@ -12,14 +12,32 @@ function buildContext(report: DigitalCheckReport): string {
     .map((i) => `- [${i.severity}] ${i.title}: ${i.description}`)
     .join("\n");
 
-  return [
+  const parts = [
     `Sito: ${report.requestedUrl}`,
     `Tipo di attivita': ${report.businessType}`,
     `Obiettivo dichiarato: ${report.goal}`,
-    `Digital Score: ${report.overallScore}/100`,
+    `Digital Score (SEO/tecnico): ${report.overallScore}/100`,
     `Riepilogo: ${report.businessImpactSummary}`,
     `Problemi rilevati nell'ultima scansione:\n${topIssues}`,
-  ].join("\n");
+  ];
+
+  // GEO (brief GEO sezione 15): stessa fonte dati del report, mai un
+  // contesto separato o inventato.
+  if (report.geo) {
+    const topGeoIssues = report.geo.issues
+      .slice(0, 6)
+      .map((i) => `- [${i.severity}] ${i.title} (${i.category}): ${i.description}`)
+      .join("\n");
+    parts.push(
+      `GEO Score (predisposizione ad essere compreso/citato da motori di ricerca generativi e AI answer engine): ${report.geo.overallScore}/100${
+        report.geo.localApplicable ? "" : " (categoria Local GEO non applicabile a questo sito)"
+      }`,
+      `Problemi GEO rilevati:\n${topGeoIssues || "(nessuno)"}`
+    );
+    if (report.geo.aiComparisonNote) parts.push(`Confronto SEO/GEO: ${report.geo.aiComparisonNote}`);
+  }
+
+  return parts.join("\n");
 }
 
 export async function askAdvisor(

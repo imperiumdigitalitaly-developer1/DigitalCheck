@@ -392,3 +392,50 @@ deploy.
     della piattaforma.
 - Le stringhe non sono hardcoded pensando a un design system separato,
   quindi un eventuale ulteriore rebranding resta semplice.
+
+## 19. GEO — Generative Engine Optimization
+
+Modulo separato dalla SEO (stessa fonte dati — lo stesso crawl — ma
+categorie e punteggio propri): valuta quanto un sito e' predisposto a
+essere compreso, sintetizzato e citato da motori di ricerca generativi e
+AI answer engine. Mai presentato come garanzia di comparsa/citazione su un
+sistema specifico — solo readiness/predisposizione.
+
+**Architettura** (`src/lib/geo/`), tutta data-driven, nessuna chiamata AI
+per i punteggi stessi:
+
+- `entity-extractor.ts`, `json-ld.ts` — entita'/brand (nome, schema.org,
+  sameAs, contatti) dal JSON-LD e dal testo gia' scaricato.
+- `ai-crawlability.ts` — robots.txt per i principali crawler AI noti
+  (GPTBot, ClaudeBot, PerplexityBot, ecc.), canonical, sitemap, euristica
+  "contenuto solo via JavaScript".
+- `semantic-understanding.ts`, `content-structure.ts`,
+  `information-completeness.ts`, `answerability.ts`, `trust-signals.ts`,
+  `structured-data.ts`, `local-geo.ts` — un modulo per categoria.
+- `geo-scoring.ts` — orchestratore: compone le 9 categorie con i pesi di
+  `geo-weights.ts` (15/15/15/15/15/10/10/5% + Local GEO ridistribuito
+  proporzionalmente solo per attivita' locali, mai un punteggio inventato).
+- `src/lib/ai/geo-analyzer.ts` — a valle dello scoring, interpreta i
+  risultati gia' calcolati (sintesi, priorita', confronto SEO/GEO
+  dinamico), stessa cache/retry/fallback onesto del motore AI SEO.
+
+**Integrazione**: `geo` e' un campo di `DigitalCheckReport` (mai
+un'architettura parallela) — persistito in `GeoAnalysis`/
+`GeoCategoryScore`/`GeoIssue` (1:1 con `Scan`) nella stessa transazione
+dello scan, troncato per il piano Free da `report-tiering.ts` esattamente
+come la SEO, mostrato in `ReportView`/`GeoReportSection`, incluso nel
+contesto dell'Assistente AI, ed esteso nel PDF (blocco compatto nel Free,
+2 pagine dedicate nel Pro — vedi `src/lib/pdf/geo-section.ts`). Il
+Gestionale (tab Metrics) mostra l'andamento GEO nel tempo accanto a quello
+SEO.
+
+**Free vs Pro**: stessa logica gia' esistente (`getPlanFeatures`), nessuna
+quota nuova — il GEO viaggia con lo stesso scan, non consuma quota a
+parte. Free vede punteggio, categorie e 2 problemi; Pro vede tutto
+(problemi completi, answerability, completezza informativa, interpretazione
+AI, confronto SEO/GEO, PDF completo).
+
+Nessuna nuova variabile d'ambiente: riusa `AI_API_KEY`/`AI_MODEL` gia'
+documentate (sezione 14) — senza chiave, l'interpretazione AI del GEO
+segue lo stesso fallback onesto della SEO ("non disponibile", mai
+inventata), mentre i punteggi tecnici restano comunque calcolati.
