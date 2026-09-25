@@ -215,7 +215,7 @@ export default function AdminPage() {
                   { label: "Scansioni fallite", value: stats.failedScans },
                   { label: "Tasso di successo scan", value: `${stats.scanSuccessRate}%` },
                 ].map((c) => (
-                  <div key={c.label} className="rounded-lg border border-line bg-white p-4">
+                  <div key={c.label} className="rounded-[14px] border border-line bg-white p-4">
                     <p className="text-sm text-ink-soft">{c.label}</p>
                     <p className="font-display text-2xl">{c.value}</p>
                   </div>
@@ -234,7 +234,7 @@ export default function AdminPage() {
               users.map((u) => (
                 <div
                   key={u.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-white p-4"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-line bg-white p-4"
                 >
                   <div>
                     <p className="font-medium">
@@ -278,7 +278,7 @@ export default function AdminPage() {
               <p className="text-ink-soft">Caricamento...</p>
             ) : (
               sites.map((s) => (
-                <div key={s.id} className="rounded-lg border border-line bg-white p-4">
+                <div key={s.id} className="rounded-[14px] border border-line bg-white p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="font-medium">{s.url}</p>
@@ -316,7 +316,7 @@ export default function AdminPage() {
               <p className="text-ink-soft">Caricamento...</p>
             ) : (
               limits.map((l) => (
-                <div key={l.plan} className="rounded-lg border border-line bg-white p-5">
+                <div key={l.plan} className="rounded-[14px] border border-line bg-white p-5">
                   <h3 className="font-display text-lg">{l.plan === "PRO" ? "Piano Pro" : "Piano Free"}</h3>
                   {l.plan === "PRO" ? (
                     <p className="mt-1 text-xs text-ink-soft">

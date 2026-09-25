@@ -135,7 +135,7 @@ export default function DashboardPage() {
       </div>
 
       {usage && (
-        <section className="mt-6 rounded-lg border border-line bg-white p-5">
+        <section className="mt-6 rounded-[14px] border border-line bg-white p-5">
           <h2 className="font-display text-lg">Utilizzo</h2>
           <div className="mt-4 space-y-4">
             {user.plan === "FREE" ? (
@@ -172,7 +172,7 @@ export default function DashboardPage() {
               <Link
                 key={s.id}
                 href={`/dashboard/site/${s.id}`}
-                className="flex min-h-[44px] items-center justify-between gap-3 rounded-lg border border-line bg-white p-4 hover:border-accent"
+                className="flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-line bg-white p-4 hover:border-accent"
               >
                 <span className="min-w-0 break-words text-sm">{s.url}</span>
                 <span className="shrink-0 text-sm font-medium text-severity-high">Score {s.lastScore}</span>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
               return (
                 <div
                   key={site.id}
-                  className="flex flex-col items-start gap-4 rounded-lg border border-line bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col items-start gap-4 rounded-[14px] border border-line bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex min-w-0 items-center gap-4">
                     {site.lastScore != null ? (

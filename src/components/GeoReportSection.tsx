@@ -35,7 +35,7 @@ export function GeoReportSection({
       </div>
 
       {/* Score + status */}
-      <div className="flex flex-col items-center gap-6 rounded-lg border border-line bg-white p-8 text-center sm:flex-row sm:text-left">
+      <div className="flex flex-col items-center gap-6 rounded-[14px] border border-line bg-white p-8 text-center sm:flex-row sm:text-left">
         <ScoreCircle score={geo.overallScore} />
         <div className="max-w-prose">
           <p className="text-sm font-medium text-ink">{geoScoreLabel(geo.overallScore)}</p>
@@ -64,7 +64,7 @@ export function GeoReportSection({
         <h4 className="font-display text-lg">Punteggi per categoria</h4>
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
           {geo.categoryScores.map((c) => (
-            <div key={c.category} className="rounded-lg border border-line bg-white p-4">
+            <div key={c.category} className="rounded-[14px] border border-line bg-white p-4">
               <p className="text-sm text-ink-soft">{GEO_CATEGORY_LABELS[c.category]}</p>
               {c.applicable ? (
                 <p className="font-display text-2xl">{c.score}</p>
@@ -100,7 +100,7 @@ export function GeoReportSection({
         <div className="mt-4 space-y-3">
           {sortedIssues.length === 0 && <p className="text-sm text-ink-soft">Nessun problema GEO rilevante individuato.</p>}
           {sortedIssues.map((issue, i) => (
-            <article key={i} className="rounded-lg border border-line bg-white p-5">
+            <article key={i} className="rounded-[14px] border border-line bg-white p-5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${GEO_SEVERITY_LABELS[issue.severity].className}`}>
                   {GEO_SEVERITY_LABELS[issue.severity].label}

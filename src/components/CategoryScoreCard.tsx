@@ -19,7 +19,7 @@ export function CategoryScoreCard({
   summary: string;
 }) {
   return (
-    <div className="rounded-lg border border-line bg-white p-5">
+    <div className="rounded-[14px] border border-line bg-white p-5">
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium text-ink">{label}</p>
         <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASS[status]}`}>

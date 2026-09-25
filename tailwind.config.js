@@ -13,14 +13,15 @@ module.exports = {
         "ink-faint": "#8A93A3",
         line: "#E3E0D8",
         "line-strong": "#D7D2C6",
+        // Blu del logo DigitalCheck reale (public/logo-transparent.png):
+        // colore brand unico in tutta l'app (landing, dashboard, admin,
+        // auth, legal). "accentBlue" resta come alias per compatibilita'
+        // con i componenti della landing che lo referenziano esplicitamente.
         accent: {
-          DEFAULT: "#1F6F64",
-          soft: "#E4EFEC",
-          deep: "#123F38",
+          DEFAULT: "#1857D9",
+          soft: "#EAF1FE",
+          deep: "#0F3FA6",
         },
-        // Blu del logo DigitalCheck reale (public/logo-transparent.png), usato
-        // SOLO nella nuova landing page: "accent" (teal) resta il colore del
-        // prodotto autenticato (dashboard, report, PDF) e non va toccato.
         accentBlue: {
           DEFAULT: "#1857D9",
           soft: "#EAF1FE",

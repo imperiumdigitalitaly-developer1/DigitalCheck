@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 export default function ResetPasswordPage() {
   return (
@@ -16,17 +17,7 @@ function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-paper px-6 py-16">
-      <div className="w-full max-w-sm">
-        <Link href="/" className="mb-6 flex items-baseline gap-2">
-          <span className="font-display text-lg">DigitalCheck</span>
-          <span className="text-xs text-ink-soft">powered by Imperium Digital</span>
-        </Link>
-        {token ? <ConfirmStep token={token} /> : <RequestStep />}
-      </div>
-    </main>
-  );
+  return <AuthShell>{token ? <ConfirmStep token={token} /> : <RequestStep />}</AuthShell>;
 }
 
 function RequestStep() {
@@ -51,22 +42,22 @@ function RequestStep() {
 
   return (
     <>
-      <h1 className="font-display text-3xl">Password dimenticata</h1>
-      <p className="mt-2 text-ink-soft">Inserisci la tua email: ti invieremo un link per reimpostarla.</p>
+      <h1 className="font-display text-[28px] font-semibold tracking-tight">Password dimenticata</h1>
+      <p className="mt-2 text-[15px] text-ink-soft">Inserisci la tua email: ti invieremo un link per reimpostarla.</p>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-3">
+      <form onSubmit={handleSubmit} className="mt-6 space-y-3.5">
         <input
           type="email"
           required
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-md border border-line bg-white px-3 py-2.5 outline-none focus:border-accent"
+          className="w-full rounded-md border border-line bg-white px-3 py-2.5 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/15"
         />
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-accent px-6 py-2.5 font-medium text-paper transition-colors hover:bg-accent-deep disabled:opacity-60"
+          className="w-full rounded-md bg-accent px-6 py-2.5 font-medium text-white transition-colors hover:bg-accent-deep disabled:opacity-60"
         >
           {loading ? "Invio in corso..." : "Invia il link"}
         </button>
@@ -124,8 +115,8 @@ function ConfirmStep({ token }: { token: string }) {
 
   return (
     <>
-      <h1 className="font-display text-3xl">Imposta una nuova password</h1>
-      <form onSubmit={handleSubmit} className="mt-6 space-y-3">
+      <h1 className="font-display text-[28px] font-semibold tracking-tight">Imposta una nuova password</h1>
+      <form onSubmit={handleSubmit} className="mt-6 space-y-3.5">
         <input
           type="password"
           required
@@ -133,13 +124,13 @@ function ConfirmStep({ token }: { token: string }) {
           placeholder="Nuova password (minimo 10 caratteri)"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          className="w-full rounded-md border border-line bg-white px-3 py-2.5 outline-none focus:border-accent"
+          className="w-full rounded-md border border-line bg-white px-3 py-2.5 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/15"
         />
         {error && <p className="text-sm text-severity-high">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-accent px-6 py-2.5 font-medium text-paper transition-colors hover:bg-accent-deep disabled:opacity-60"
+          className="w-full rounded-md bg-accent px-6 py-2.5 font-medium text-white transition-colors hover:bg-accent-deep disabled:opacity-60"
         >
           {loading ? "Aggiornamento..." : "Aggiorna password"}
         </button>

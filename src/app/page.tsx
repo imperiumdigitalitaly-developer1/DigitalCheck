@@ -264,8 +264,8 @@ export default function HomePage() {
                   <b className="font-medium text-ink-soft">digitalcheck.app</b>
                   <span className="text-line-strong">/</span>esempio-hotel-roma.it
                 </span>
-                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-accent/10 px-2.5 py-1 text-[11.5px] font-medium text-accent">
-                  <i className="block h-1.5 w-1.5 rounded-full bg-accent" />
+                <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-score-strong/10 px-2.5 py-1 text-[11.5px] font-medium text-score-strong">
+                  <i className="block h-1.5 w-1.5 rounded-full bg-score-strong" />
                   Aggiornato ora
                 </span>
               </div>
