@@ -4,6 +4,9 @@ import type { NextRequest } from "next/server";
 
 export const SESSION_COOKIE_NAME = "dc_session";
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 giorni
+// "Rimani connesso" (login): stesso cookie/JWT, solo scadenza piu' lunga —
+// nessun secondo sistema di sessione, nessuna credenziale salvata altrove.
+export const REMEMBER_ME_DURATION_SECONDS = 60 * 60 * 24 * 30; // 30 giorni
 
 export interface SessionPayload {
   userId: string;
@@ -21,11 +24,14 @@ function getSecretKey(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-export async function createSessionToken(payload: SessionPayload): Promise<string> {
+export async function createSessionToken(
+  payload: SessionPayload,
+  durationSeconds: number = SESSION_DURATION_SECONDS
+): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
+    .setExpirationTime(`${durationSeconds}s`)
     .sign(getSecretKey());
 }
 
@@ -65,10 +71,12 @@ export async function getCurrentSession(): Promise<SessionPayload | null> {
   return verifySessionToken(token);
 }
 
-export const sessionCookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
-  path: "/",
-  maxAge: SESSION_DURATION_SECONDS,
-};
+export function sessionCookieOptions(durationSeconds: number = SESSION_DURATION_SECONDS) {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: durationSeconds,
+  };
+}

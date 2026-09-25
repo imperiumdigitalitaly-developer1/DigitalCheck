@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { verifyPassword } from "@/lib/auth/password";
-import { createSessionToken, sessionCookieOptions, SESSION_COOKIE_NAME } from "@/lib/auth/session";
+import {
+  createSessionToken,
+  sessionCookieOptions,
+  SESSION_COOKIE_NAME,
+  REMEMBER_ME_DURATION_SECONDS,
+} from "@/lib/auth/session";
 import { grantOwnerPrivilegesIfNeeded } from "@/lib/auth/owner";
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
+  rememberMe: z.boolean().optional().default(false),
 });
 
 // Rate limiting minimale per rallentare il brute force sulle password,
@@ -32,7 +38,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Email o password non validi" }, { status: 400 });
   }
-  const { email, password } = parsed.data;
+  const { email, password, rememberMe } = parsed.data;
 
   if (isRateLimited(`${ip}:${email}`)) {
     return NextResponse.json({ error: "Troppi tentativi. Riprova tra qualche minuto." }, { status: 429 });
@@ -54,12 +60,18 @@ export async function POST(request: NextRequest) {
 
   const currentUser = await grantOwnerPrivilegesIfNeeded(user);
 
-  const sessionToken = await createSessionToken({
-    userId: currentUser.id,
-    email: currentUser.email,
-    isAdmin: currentUser.isAdmin,
-  });
+  // "Rimani connesso": stesso cookie/JWT, solo scadenza piu' lunga (30gg
+  // invece di 7) — vedi src/lib/auth/session.ts.
+  const duration = rememberMe ? REMEMBER_ME_DURATION_SECONDS : undefined;
+  const sessionToken = await createSessionToken(
+    {
+      userId: currentUser.id,
+      email: currentUser.email,
+      isAdmin: currentUser.isAdmin,
+    },
+    duration
+  );
   const response = NextResponse.json({ id: currentUser.id, email: currentUser.email });
-  response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions);
+  response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions(duration));
   return response;
 }
