@@ -42,8 +42,9 @@ export async function generateFreeReportPdf(report: DigitalCheckReport): Promise
 
   // ---- Header ------------------------------------------------------
   const headerTop = canvas.y;
-  canvas.text("DigitalCheck", { size: 19, font: "display", color: COLOR.accent, gap: 1 });
-  canvas.text("powered by Imperium Digital", { size: 7.5, color: COLOR.inkSoft, gap: 10 });
+  canvas.drawLogo(MARGIN, headerTop, 22);
+  canvas.y = headerTop - 22 - 4;
+  canvas.text("powered by Imperium Digital", { size: 7.5, color: COLOR.inkSoft, x: MARGIN, gap: 10 });
 
   const pillLabel = "PIANO FREE";
   const pillSize = 8;
@@ -200,7 +201,8 @@ export async function generateProReportPdf(report: DigitalCheckReport): Promise<
 // margine, come la prima pagina di un vero report di consulenza.
 function drawCover(canvas: PdfCanvas, report: DigitalCheckReport) {
   canvas.y -= 30;
-  canvas.text("DigitalCheck", { size: 34, font: "display", color: COLOR.accent, align: "center", gap: 3 });
+  const logoHeight = canvas.drawLogoCentered(canvas.y, 74);
+  canvas.y -= logoHeight + 14;
   canvas.text("powered by Imperium Digital", { size: 9.5, color: COLOR.inkSoft, align: "center", gap: 40 });
 
   canvas.text("PROFESSIONAL WEBSITE AUDIT", { size: 11, font: "bold", color: COLOR.ink, align: "center", gap: 26 });

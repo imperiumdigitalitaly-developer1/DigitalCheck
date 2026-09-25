@@ -1,12 +1,22 @@
 import {
   PDFDocument,
   PDFFont,
+  PDFImage,
   PDFPage,
   StandardFonts,
   LineCapStyle,
   rgb,
 } from "pdf-lib";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { COLOR, scoreColor } from "./theme";
+
+// Logo DigitalCheck con sfondo trasparente, incorporato una sola volta per
+// documento e riusato in copertina (Pro) e nell'header (Free) — mai un
+// wordmark testuale al posto del logo reale (richiesta esplicita: "l'unica
+// cosa da inserire in prima pagina del pdf e' il logo di digitalcheck con
+// sfondo trasparente").
+const LOGO_PATH = join(process.cwd(), "public", "brand", "digitalcheck-logo.png");
 
 export const PAGE_WIDTH = 595.28; // A4
 export const PAGE_HEIGHT = 841.89;
@@ -55,14 +65,16 @@ export class PdfCanvas {
   fontRegular: PDFFont;
   fontBold: PDFFont;
   fontDisplay: PDFFont; // serif, per titoli e numeri di punteggio
+  logo: PDFImage;
   private pages: PageRef[] = [];
   private currentChrome: boolean;
 
-  private constructor(doc: PDFDocument, fontRegular: PDFFont, fontBold: PDFFont, fontDisplay: PDFFont) {
+  private constructor(doc: PDFDocument, fontRegular: PDFFont, fontBold: PDFFont, fontDisplay: PDFFont, logo: PDFImage) {
     this.doc = doc;
     this.fontRegular = fontRegular;
     this.fontBold = fontBold;
     this.fontDisplay = fontDisplay;
+    this.logo = logo;
     this.page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     this.currentChrome = false;
     this.pages.push({ page: this.page, chrome: false });
@@ -74,7 +86,22 @@ export class PdfCanvas {
     const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
     const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
     const fontDisplay = await doc.embedFont(StandardFonts.TimesRomanBold);
-    return new PdfCanvas(doc, fontRegular, fontBold, fontDisplay);
+    const logo = await doc.embedPng(readFileSync(LOGO_PATH));
+    return new PdfCanvas(doc, fontRegular, fontBold, fontDisplay, logo);
+  }
+
+  /** Disegna il logo centrato in orizzontale, altezza fissa, larghezza proporzionale. Ritorna l'altezza. */
+  drawLogoCentered(top: number, height: number): number {
+    const width = height * (this.logo.width / this.logo.height);
+    this.page.drawImage(this.logo, { x: (PAGE_WIDTH - width) / 2, y: top - height, width, height });
+    return height;
+  }
+
+  /** Disegna il logo ancorato a sinistra (x, top), altezza fissa, larghezza proporzionale. Ritorna la larghezza. */
+  drawLogo(x: number, top: number, height: number): number {
+    const width = height * (this.logo.width / this.logo.height);
+    this.page.drawImage(this.logo, { x, y: top - height, width, height });
+    return width;
   }
 
   private font(kind: TextOptions["font"]): PDFFont {
