@@ -7,12 +7,29 @@ interface Message {
   text: string;
 }
 
+// Dopo un errore di quota (429) il pulsante resta disabilitato per questo
+// tempo: ritentare subito peggiorerebbe solo il rate limit condiviso da
+// tutte le funzioni AI (brief "gestione errori AI", punto A).
+const QUOTA_COOLDOWN_MS = 30_000;
+
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const cooldownActive = cooldownUntil != null && now < cooldownUntil;
+  const cooldownSecondsLeft = cooldownActive ? Math.ceil((cooldownUntil! - now) / 1000) : 0;
 
   // Porta in vista l'ultimo messaggio: senza, dopo qualche scambio la
   // risposta resta sotto il bordo dell'area scrollabile.
@@ -23,12 +40,13 @@ export function ChatWidget() {
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || cooldownActive) return;
 
     const nextMessages: Message[] = [...messages, { role: "user", text }];
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
+    setNotice(null);
 
     try {
       const response = await fetch("/api/assistant/chat", {
@@ -40,10 +58,14 @@ export function ChatWidget() {
       if (response.ok) {
         setMessages((m) => [...m, { role: "assistant", text: data.answer }]);
       } else {
-        setMessages((m) => [...m, { role: "assistant", text: data.error ?? "Non disponibile al momento." }]);
+        // Un errore del provider AI non e' una risposta dell'assistente:
+        // va in un box informativo neutro, mai in una bolla di chat che
+        // sembrerebbe una risposta vera (brief "gestione errori AI").
+        setNotice(data.error ?? "Non disponibile al momento.");
+        if (data.code === "quota") setCooldownUntil(Date.now() + QUOTA_COOLDOWN_MS);
       }
     } catch {
-      setMessages((m) => [...m, { role: "assistant", text: "Connessione non riuscita. Riprova." }]);
+      setNotice("Connessione non riuscita. Riprova.");
     } finally {
       setLoading(false);
     }
@@ -77,6 +99,12 @@ export function ChatWidget() {
             {loading && <p className="text-sm text-ink-soft">...</p>}
             <div ref={endRef} />
           </div>
+          {notice && (
+            <p className="mx-4 mb-3 rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink-soft" role="status">
+              {notice}
+              {cooldownActive && ` Riprova tra ${cooldownSecondsLeft}s.`}
+            </p>
+          )}
           <form onSubmit={handleSend} className="flex gap-2 border-t border-line p-3">
             <input
               type="text"
@@ -87,10 +115,10 @@ export function ChatWidget() {
             />
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || cooldownActive}
               className="min-h-[44px] rounded-md bg-accent px-3 py-2 text-sm font-medium text-paper hover:bg-accent-deep disabled:opacity-60"
             >
-              Invia
+              {cooldownActive ? `${cooldownSecondsLeft}s` : "Invia"}
             </button>
           </form>
         </div>

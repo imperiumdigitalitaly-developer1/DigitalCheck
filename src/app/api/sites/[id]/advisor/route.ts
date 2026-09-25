@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { buildReportFromScan } from "@/lib/pipeline/build-report-from-scan";
 import { askAdvisor } from "@/lib/ai/advisor";
+import { aiErrorClientMessage, aiErrorHttpStatus } from "@/lib/ai/errors";
+import { getCachedAdvisorResponse, setCachedAdvisorResponse } from "@/lib/ai/response-cache";
 import { getPlanFeatures } from "@/lib/billing/plan-config";
 
 export const runtime = "nodejs";
@@ -81,14 +83,27 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: "Scrivi una domanda prima di inviare." }, { status: 400 });
   }
 
-  const report = await buildReportFromScan(latestScan.id);
-  if (!report) {
-    return NextResponse.json({ error: "Dati dello scan non disponibili." }, { status: 409 });
-  }
+  // Cache (gestione errori AI e cache analisi, punto B): una domanda
+  // equivalente gia' posta per questo sito su questa stessa scansione
+  // entro le ultime 24h risparmia del tutto la chiamata a Gemini.
+  const cachedAnswer = await getCachedAdvisorResponse(params.id, latestScan.id, parsed.data.question);
 
-  const result = await askAdvisor(parsed.data.question, report);
-  if (!result.answer) {
-    return NextResponse.json({ error: result.unavailableReason ?? "Assistente non disponibile." }, { status: 503 });
+  let answer: string;
+  if (cachedAnswer != null) {
+    answer = cachedAnswer;
+  } else {
+    const report = await buildReportFromScan(latestScan.id);
+    if (!report) {
+      return NextResponse.json({ error: "Dati dello scan non disponibili." }, { status: 409 });
+    }
+
+    const result = await askAdvisor(parsed.data.question, report);
+    if (!result.answer) {
+      const kind = result.errorKind ?? "unknown";
+      return NextResponse.json({ error: aiErrorClientMessage(kind), code: kind }, { status: aiErrorHttpStatus(kind) });
+    }
+    answer = result.answer;
+    await setCachedAdvisorResponse(params.id, latestScan.id, parsed.data.question, answer);
   }
 
   // Storico persistito (brief sezione 13/23): permette all'assistente di
@@ -102,12 +117,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         createMany: {
           data: [
             { role: "user", text: parsed.data.question },
-            { role: "assistant", text: result.answer },
+            { role: "assistant", text: answer },
           ],
         },
       },
     },
   });
 
-  return NextResponse.json({ answer: result.answer });
+  return NextResponse.json({ answer });
 }

@@ -4,6 +4,7 @@ import type { GeoScoringOutput } from "@/lib/geo/geo-scoring";
 import { buildGeoAiInput, buildGeoSystemPrompt, buildGeoUserPrompt } from "./geo-prompts";
 import { parseGeoAiAnalysis } from "./geo-schema";
 import { callGemini } from "./gemini-client";
+import { aiErrorClientMessage } from "./errors";
 
 export interface GeoAiResult {
   summary: string | null;
@@ -59,12 +60,12 @@ export async function runGeoAiAnalysis(
 async function analyzeUncached(system: string, user: string): Promise<GeoAiResult> {
   const result = await callGemini(system, user, { timeoutMs: 20_000, json: true });
   if (!result.text) {
-    console.error(`[geo-analyzer] chiamata AI fallita: ${result.errorReason ?? "errore sconosciuto"}`);
+    const kind = result.error?.kind ?? "unknown";
     return {
       summary: null,
       priorities: [],
       comparisonNote: null,
-      unavailableReason: `Interpretazione AI del GEO non disponibile: ${result.errorReason ?? "errore sconosciuto"}.`,
+      unavailableReason: `Interpretazione AI del GEO non disponibile: ${aiErrorClientMessage(kind)}`,
     };
   }
 

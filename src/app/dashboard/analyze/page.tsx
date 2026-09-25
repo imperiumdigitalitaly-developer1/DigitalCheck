@@ -65,6 +65,7 @@ export default function AnalyzeSitePage() {
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [report, setReport] = useState<DigitalCheckReport | null>(null);
   const [siteId, setSiteId] = useState<string | null>(null);
+  const [scanId, setScanId] = useState<string | null>(null);
   const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
@@ -141,6 +142,7 @@ export default function AnalyzeSitePage() {
         return;
       }
       setReport(scanData.report);
+      setScanId(scanData.scanId ?? null);
       setStatus("done");
     } catch {
       setError("Non e' stato possibile completare l'analisi. Riprova tra poco.");
@@ -261,6 +263,7 @@ export default function AnalyzeSitePage() {
                 onClick={() => {
                   setStatus("idle");
                   setReport(null);
+                  setScanId(null);
                   setUrl("");
                 }}
                 className="text-sm text-ink-soft hover:text-ink"
@@ -269,7 +272,13 @@ export default function AnalyzeSitePage() {
               </button>
             </div>
           </div>
-          <ReportView report={report} plan={user?.plan ?? "FREE"} onUpgrade={handleUpgrade} />
+          <ReportView
+            report={report}
+            plan={user?.plan ?? "FREE"}
+            onUpgrade={handleUpgrade}
+            siteId={siteId ?? undefined}
+            scanId={scanId ?? undefined}
+          />
         </div>
       )}
     </DashboardShell>

@@ -31,6 +31,11 @@ interface SiteDetail {
   scans: ScanHistoryItem[];
 }
 
+// Dopo un errore di quota (429) il pulsante resta disabilitato per questo
+// tempo: ritentare subito peggiorerebbe solo il rate limit condiviso da
+// tutte le funzioni AI (brief "gestione errori AI", punto A).
+const QUOTA_COOLDOWN_MS = 30_000;
+
 const PRO_FEATURES = [
   "Analisi complete e report dettagliato",
   "Monitoraggio automatico periodico",
@@ -57,6 +62,8 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
   const [askingAdvisor, setAskingAdvisor] = useState(false);
   const [advisorHistory, setAdvisorHistory] = useState<{ question: string; answer: string }[]>([]);
   const [advisorError, setAdvisorError] = useState<string | null>(null);
+  const [advisorCooldownUntil, setAdvisorCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const [helpMessage, setHelpMessage] = useState("");
   const [sendingHelp, setSendingHelp] = useState(false);
@@ -98,6 +105,15 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!advisorCooldownUntil) return;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [advisorCooldownUntil]);
+
+  const advisorCooldownActive = advisorCooldownUntil != null && now < advisorCooldownUntil;
+  const advisorCooldownSecondsLeft = advisorCooldownActive ? Math.ceil((advisorCooldownUntil! - now) / 1000) : 0;
 
   async function handleScanNow() {
     setScanning(true);
@@ -157,7 +173,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
 
   async function handleAskAdvisor(e: React.FormEvent) {
     e.preventDefault();
-    if (!question.trim()) return;
+    if (!question.trim() || advisorCooldownActive) return;
     setAskingAdvisor(true);
     setAdvisorError(null);
     const response = await fetch(`/api/sites/${params.id}/advisor`, {
@@ -168,7 +184,10 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
     const data = await response.json();
     if (!response.ok) {
       if (response.status === 403) setUpgradePrompt(true);
-      else setAdvisorError(data.error ?? "Non e' stato possibile ottenere una risposta.");
+      else {
+        setAdvisorError(data.error ?? "Non e' stato possibile ottenere una risposta.");
+        if (data.code === "quota") setAdvisorCooldownUntil(Date.now() + QUOTA_COOLDOWN_MS);
+      }
     } else {
       setAdvisorHistory((h) => [...h, { question, answer: data.answer }]);
       setQuestion("");
@@ -327,13 +346,18 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
                 />
                 <button
                   type="submit"
-                  disabled={askingAdvisor}
+                  disabled={askingAdvisor || advisorCooldownActive}
                   className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-paper hover:bg-accent-deep disabled:opacity-60"
                 >
-                  {askingAdvisor ? "..." : "Chiedi"}
+                  {advisorCooldownActive ? `${advisorCooldownSecondsLeft}s` : askingAdvisor ? "..." : "Chiedi"}
                 </button>
               </form>
-              {advisorError && <p className="mt-2 text-sm text-severity-high">{advisorError}</p>}
+              {advisorError && (
+                <p className="mt-2 rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink-soft" role="status">
+                  {advisorError}
+                  {advisorCooldownActive && ` Riprova tra ${advisorCooldownSecondsLeft}s.`}
+                </p>
+              )}
             </div>
           )}
         </section>
@@ -410,7 +434,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
                   {(() => {
                     const scanReport = reportsByScan[scan.id];
                     return scanReport ? (
-                      <ReportView report={scanReport} plan={plan} onUpgrade={handleUpgrade} />
+                      <ReportView report={scanReport} plan={plan} onUpgrade={handleUpgrade} siteId={params.id} scanId={scan.id} />
                     ) : null;
                   })()}
                 </div>
