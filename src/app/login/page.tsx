@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 const VERIFY_MESSAGES: Record<string, { text: string; tone: "ok" | "error" }> = {
   success: { text: "Email confermata. Ora puoi accedere.", tone: "ok" },
@@ -54,78 +55,72 @@ function LoginForm() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-paper px-6 py-16">
-      <div className="w-full max-w-sm">
-        <Link href="/" className="mb-6 flex items-baseline gap-2">
-          <span className="font-display text-lg">DigitalCheck</span>
-          <span className="text-xs text-ink-soft">powered by Imperium Digital</span>
-        </Link>
-        <h1 className="font-display text-3xl">Accedi</h1>
-        <p className="mt-2 text-ink-soft">Entra nella tua dashboard DigitalCheck.</p>
+    <AuthShell>
+      <h1 className="font-display text-[28px] font-semibold tracking-tight">Accedi</h1>
+      <p className="mt-2 text-[15px] text-ink-soft">Entra nella tua dashboard DigitalCheck.</p>
 
-        {verifyMessage && (
-          <p
-            className={`mt-4 rounded-md border px-3 py-2 text-sm ${
-              verifyMessage.tone === "ok"
-                ? "border-accent/30 bg-accent-soft/40 text-accent-deep"
-                : "border-severity-high/30 bg-severity-high/10 text-severity-high"
-            }`}
-          >
-            {verifyMessage.text}
-          </p>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-3">
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm text-ink-soft">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-line bg-white px-3 py-2.5 outline-none focus:border-accent"
-            />
-          </div>
-          <div>
-            <div className="mb-1 flex items-center justify-between">
-              <label htmlFor="password" className="text-sm text-ink-soft">
-                Password
-              </label>
-              <Link href="/reset-password" className="text-sm text-accent hover:underline">
-                Password dimenticata?
-              </Link>
-            </div>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-line bg-white px-3 py-2.5 outline-none focus:border-accent"
-            />
-          </div>
-
-          {error && <p className="text-sm text-severity-high">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-accent px-6 py-2.5 font-medium text-paper transition-colors hover:bg-accent-deep disabled:opacity-60"
-          >
-            {loading ? "Accesso in corso..." : "Accedi"}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-ink-soft">
-          Non hai un account?{" "}
-          <Link href="/register" className="text-accent hover:underline">
-            Registrati
-          </Link>
+      {verifyMessage && (
+        <p
+          className={`mt-4 rounded-md border px-3 py-2 text-sm ${
+            verifyMessage.tone === "ok"
+              ? "border-accent/30 bg-accent-soft/40 text-accent-deep"
+              : "border-severity-high/30 bg-severity-high/10 text-severity-high"
+          }`}
+        >
+          {verifyMessage.text}
         </p>
-      </div>
-    </main>
+      )}
+
+      <form onSubmit={handleSubmit} className="mt-6 space-y-3.5">
+        <div>
+          <label htmlFor="email" className="mb-1 block text-sm text-ink-soft">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-md border border-line bg-white px-3 py-2.5 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/15"
+          />
+        </div>
+        <div>
+          <div className="mb-1 flex items-center justify-between">
+            <label htmlFor="password" className="text-sm text-ink-soft">
+              Password
+            </label>
+            <Link href="/reset-password" className="text-sm text-accent hover:underline">
+              Password dimenticata?
+            </Link>
+          </div>
+          <input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-md border border-line bg-white px-3 py-2.5 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/15"
+          />
+        </div>
+
+        {error && <p className="text-sm text-severity-high">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-md bg-accent px-6 py-2.5 font-medium text-white transition-colors hover:bg-accent-deep disabled:opacity-60"
+        >
+          {loading ? "Accesso in corso..." : "Accedi"}
+        </button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-ink-soft">
+        Non hai un account?{" "}
+        <Link href="/register" className="font-medium text-accent hover:underline">
+          Registrati
+        </Link>
+      </p>
+    </AuthShell>
   );
 }
