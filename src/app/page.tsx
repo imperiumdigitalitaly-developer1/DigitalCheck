@@ -115,14 +115,6 @@ const CATEGORIES: { key: string; name: string; score: number; desc: string; icon
   },
 ];
 
-const BAND_LEGEND: { range: string; band: keyof typeof BAND_HEX }[] = [
-  { range: "0–39", band: "critical" },
-  { range: "40–59", band: "weak" },
-  { range: "60–74", band: "good" },
-  { range: "75–89", band: "strong" },
-  { range: "90–100", band: "excellent" },
-];
-
 const FREE_FEATURES = [
   "1 analisi a settimana",
   "1 sito al mese",
@@ -256,7 +248,7 @@ export default function HomePage() {
                 Analizza il tuo sito →
               </Link>
               <a
-                href="#digital-score"
+                href="#analisi"
                 className="inline-flex items-center justify-center rounded-md border border-line-strong px-6 py-3.5 text-[15.5px] font-medium text-ink transition-colors hover:border-accentBlue hover:text-accentBlue"
               >
                 Guarda un report di esempio
@@ -267,8 +259,8 @@ export default function HomePage() {
 
           <div className="animate-fadeUp [animation-delay:140ms]">
             <div className="overflow-hidden rounded-[14px] border border-line bg-white shadow-[0_24px_60px_-16px_rgba(16,20,28,0.18),0_8px_20px_-8px_rgba(16,20,28,0.08)]">
-              <div className="flex items-center justify-between gap-2.5 border-b border-line px-5 py-4">
-                <span className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap font-mono text-xs text-ink-faint">
+              <div className="flex flex-wrap items-center justify-between gap-x-2.5 gap-y-1.5 border-b border-line px-4 py-3 sm:px-5 sm:py-4">
+                <span className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap font-mono text-[11px] text-ink-faint sm:text-xs">
                   <b className="font-medium text-ink-soft">digitalcheck.app</b>
                   <span className="text-line-strong">/</span>esempio-hotel-roma.it
                 </span>
@@ -326,7 +318,7 @@ export default function HomePage() {
       </section>
 
       {/* COME FUNZIONA */}
-      <section id="come-funziona" className="border-b border-line px-5 py-[52px] sm:px-8 sm:py-[72px]">
+      <section id="come-funziona" className="scroll-mt-20 border-b border-line px-5 py-[52px] sm:px-8 sm:py-[72px]">
         <div className="mx-auto max-w-[1120px]">
           <div className="mb-8 max-w-[640px] animate-fadeUp">
             <div className="mb-3.5 flex items-center gap-2.5">
@@ -358,58 +350,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* DIGITAL SCORE */}
-      <section id="digital-score" className="relative border-b border-line px-5 py-[52px] sm:px-8 sm:py-[72px]">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{
-            backgroundImage: "radial-gradient(#D7D2C6 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-            maskImage: "radial-gradient(640px 420px at 50% 0%, #000, transparent 78%)",
-            WebkitMaskImage: "radial-gradient(640px 420px at 50% 0%, #000, transparent 78%)",
-          }}
-        />
-        <div className="relative mx-auto grid max-w-[1120px] grid-cols-1 items-start gap-11 lg:grid-cols-2">
-          <div className="animate-fadeUp">
-            <div className="mb-3.5 flex items-center gap-2.5">
-              <span className="block h-px w-[26px] bg-accentBlue" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-accentBlue">Digital Score</span>
-            </div>
-            <h2 className="text-balance font-display text-[clamp(28px,4vw,38px)] font-semibold">Il tuo sito, in un unico numero.</h2>
-            <p className="mt-3.5 max-w-[48ch] text-[16.5px] leading-relaxed text-ink-soft">
-              Un punteggio da 0 a 100 che riassume lo stato del sito, calcolato con pesi diversi per categoria a seconda del tipo di
-              attività — non una semplice media.
-            </p>
-            <div className="mt-7 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
-              {BAND_LEGEND.map((b) => (
-                <div key={b.range} className="rounded-md border border-line bg-white p-3">
-                  <p className="font-mono text-[15px] font-medium" style={{ color: BAND_HEX[b.band] }}>
-                    {b.range}
-                  </p>
-                  <p className="mt-0.5 text-[11.5px] text-ink-faint">{BAND_LABEL[b.band]}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex animate-fadeUp flex-col items-center gap-6 pt-1.5 [animation-delay:140ms]">
-            <DigitalScoreGauge score={overallScore} size={190} strokeWidth={13} />
-            <div className="flex w-full max-w-[360px] flex-col gap-3.5">
-              {CATEGORIES.map((c) => (
-                <div key={c.key} className="grid grid-cols-[150px_1fr_34px] items-center gap-3 max-[420px]:grid-cols-[96px_1fr_30px]">
-                  <span className="text-sm font-medium">{c.name}</span>
-                  <AnimatedBar value={c.score} className="h-1.5" />
-                  <span className="text-right font-mono text-[13px] tabular-nums text-ink-faint">{c.score}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* LE 8 ANALISI */}
-      <section id="analisi" className="border-b border-line px-5 py-[52px] sm:px-8 sm:py-[72px]">
+      <section id="analisi" className="scroll-mt-20 border-b border-line px-5 py-[52px] sm:px-8 sm:py-[72px]">
         <div className="mx-auto max-w-[1120px]">
           <div className="mb-8 max-w-[640px] animate-fadeUp">
             <div className="mb-3.5 flex items-center gap-2.5">
@@ -444,43 +386,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* DAL DATO ALL'AZIONE */}
-      <section className="border-b border-line bg-white px-5 py-[52px] sm:px-8 sm:py-[72px]">
-        <div className="mx-auto max-w-[1120px]">
-          <div className="mb-8 max-w-[640px] animate-fadeUp">
-            <div className="mb-3.5 flex items-center gap-2.5">
-              <span className="block h-px w-[26px] bg-accentBlue" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-accentBlue">Dal dato all&apos;azione</span>
-            </div>
-            <h2 className="text-balance font-display text-[clamp(28px,4vw,38px)] font-semibold">Non un voto. Un percorso.</h2>
-            <p className="mt-3 text-[16.5px] leading-relaxed text-ink-soft">
-              DigitalCheck non si ferma al punteggio: interpreta i dati raccolti e li trasforma in indicazioni comprensibili e operative,
-              in ordine di priorità.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4">
-            {[
-              { n: "01", title: "Rileva", text: "Individua il problema con dati tecnici verificabili." },
-              { n: "02", title: "Interpreta", text: "Spiega perché è importante per la tua attività." },
-              { n: "03", title: "Prioritizza", text: "Indica cosa dovrebbe essere risolto prima." },
-              { n: "04", title: "Agisci", text: "Fornisce indicazioni pratiche, spiegate in linguaggio semplice." },
-            ].map((step, i) => (
-              <div
-                key={step.n}
-                className={`animate-fadeUp border-t border-line px-0 py-5 first:border-t-0 sm:border-l sm:border-t-0 sm:px-5 sm:py-0.5 sm:first:border-l-0 sm:first:pl-0`}
-                style={{ animationDelay: `${50 + i * 80}ms` }}
-              >
-                <span className="font-mono text-[13px] font-medium text-accentBlue">{step.n}</span>
-                <h3 className="mt-2 text-[17px] font-semibold">{step.title}</h3>
-                <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-soft">{step.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* FREE VS PRO */}
-      <section id="pricing" className="border-b border-line px-5 py-[52px] sm:px-8 sm:py-[72px]">
+      <section id="pricing" className="scroll-mt-20 border-b border-line px-5 py-[52px] sm:px-8 sm:py-[72px]">
         <div className="mx-auto max-w-[1120px]">
           <div className="mb-8 max-w-[640px] animate-fadeUp">
             <div className="mb-3.5 flex items-center gap-2.5">
@@ -552,7 +459,7 @@ export default function HomePage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="border-b border-line px-5 py-[52px] sm:px-8 sm:py-[72px]">
+      <section id="faq" className="scroll-mt-20 border-b border-line px-5 py-[52px] sm:px-8 sm:py-[72px]">
         <div className="mx-auto max-w-[1120px]">
           <div className="mb-8 max-w-[640px] animate-fadeUp">
             <div className="mb-3.5 flex items-center gap-2.5">
@@ -626,11 +533,6 @@ export default function HomePage() {
                 <li>
                   <a href="#come-funziona" className="hover:text-ink">
                     Come funziona
-                  </a>
-                </li>
-                <li>
-                  <a href="#digital-score" className="hover:text-ink">
-                    Digital Score
                   </a>
                 </li>
                 <li>
