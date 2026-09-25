@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { askAssistant } from "@/lib/ai/assistant";
+import { aiErrorClientMessage, aiErrorHttpStatus } from "@/lib/ai/errors";
 
 export const runtime = "nodejs";
 // Peggior caso della chiamata AI con retry su 503/429: ~67s (3 x 20s + 7s).
@@ -40,7 +41,8 @@ export async function POST(request: NextRequest) {
 
   const result = await askAssistant(parsed.data.message, parsed.data.history ?? []);
   if (!result.answer) {
-    return NextResponse.json({ error: result.unavailableReason ?? "Assistente non disponibile." }, { status: 503 });
+    const kind = result.errorKind ?? "unknown";
+    return NextResponse.json({ error: aiErrorClientMessage(kind), code: kind }, { status: aiErrorHttpStatus(kind) });
   }
   return NextResponse.json({ answer: result.answer });
 }

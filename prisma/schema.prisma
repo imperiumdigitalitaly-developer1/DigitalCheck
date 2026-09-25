@@ -159,12 +159,35 @@ model Site {
   monitoringConfig        MonitoringConfig?
   aiConversations         AIConversation[]
   notifications           Notification[]
+  aiResponseCache         AiResponseCache[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
   @@index([monitoringEnabled, nextScanAt])
+}
+
+// Cache delle risposte dell'AI Assistant (gestione errori AI e cache
+// analisi, punto B): evita di richiamare Gemini per una domanda equivalente
+// gia' posta sullo stesso sito per la stessa scansione, cosi' non si
+// consuma altra quota condivisa per un risultato che sarebbe identico.
+// `key` e' l'unico campo interrogato in lettura/scrittura (sha256 di
+// siteId + ultimo scanId + domanda normalizzata) — vedi
+// src/lib/ai/response-cache.ts. onDelete Cascade dal Site: quando un sito
+// viene eliminato non deve restare cache orfana collegata a un sito che
+// non esiste piu'.
+model AiResponseCache {
+  id        String   @id @default(cuid())
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  key       String   @unique
+  response  String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([siteId])
+  @@index([expiresAt])
 }
 
 model Scan {

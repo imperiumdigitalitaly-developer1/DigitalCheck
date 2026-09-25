@@ -2,10 +2,11 @@ import type { DigitalCheckReport } from "@/types";
 import { STATUS_LABEL } from "@/lib/analysis/constants";
 import { CATEGORY_LABELS } from "@/lib/category-labels";
 import { callGemini } from "./gemini-client";
+import type { AiErrorKind } from "./errors";
 
 export interface AdvisorResult {
   answer: string | null;
-  unavailableReason?: string;
+  errorKind?: AiErrorKind;
 }
 
 // Contesto per l'assistente AI Pro (brief audit sezione 29: deve poter
@@ -82,7 +83,7 @@ export async function askAdvisor(
 
   const result = await callGemini(system, user, { timeoutMs: 25_000 });
   if (!result.text) {
-    return { answer: null, unavailableReason: result.errorReason };
+    return { answer: null, errorKind: result.error?.kind ?? "unknown" };
   }
   return { answer: result.text };
 }

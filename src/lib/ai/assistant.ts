@@ -1,8 +1,9 @@
 import { callGemini } from "./gemini-client";
+import type { AiErrorKind } from "./errors";
 
 export interface AssistantResult {
   answer: string | null;
-  unavailableReason?: string;
+  errorKind?: AiErrorKind;
 }
 
 const SYSTEM_PROMPT = [
@@ -26,7 +27,7 @@ export async function askAssistant(message: string, history: ChatTurn[]): Promis
 
   const result = await callGemini(SYSTEM_PROMPT, user, { timeoutMs: 20_000 });
   if (!result.text) {
-    return { answer: null, unavailableReason: result.errorReason };
+    return { answer: null, errorKind: result.error?.kind ?? "unknown" };
   }
   return { answer: result.text };
 }

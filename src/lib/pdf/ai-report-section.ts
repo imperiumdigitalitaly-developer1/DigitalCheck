@@ -23,10 +23,13 @@ export function drawAiReportPage(canvas: PdfCanvas, report: DigitalCheckReport) 
   canvas.sectionTitle("AI Report", { subtitle: "Interpretazione dei dati raccolti durante l'audit, basata solo sui risultati calcolati sopra." });
 
   if (!report.aiInsightsAvailable) {
+    // Mai il dettaglio del provider (status, corpo della risposta) qui:
+    // solo una frase neutra, indipendentemente dal motivo del fallimento
+    // (quota, sovraccarico, timeout...) — vedi src/lib/ai/errors.ts.
     canvas.calloutBox(
-      "Analisi AI — Temporaneamente non disponibile",
-      "Il sistema non ha potuto completare l'interpretazione AI durante questa scansione. I punteggi tecnici e le verifiche automatiche nelle pagine precedenti restano validi e disponibili.",
-      { fill: COLOR.paper, kickerColor: COLOR.ink, maxLines: 2 }
+      "Analisi AI — Non incluso in questa versione del report",
+      "Approfondimento AI non incluso in questa versione del report: le indicazioni si basano sui controlli tecnici automatici. I punteggi e le verifiche nelle pagine precedenti restano validi e disponibili.",
+      { fill: COLOR.paper, kickerColor: COLOR.ink, maxLines: 3 }
     );
     canvas.y -= 6;
   }

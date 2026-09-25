@@ -19,6 +19,11 @@ interface SiteListItem {
   lastScanStatus: string | null;
 }
 
+// Dopo un errore di quota (429) il pulsante resta disabilitato per questo
+// tempo: ritentare subito peggiorerebbe solo il rate limit condiviso da
+// tutte le funzioni AI (brief "gestione errori AI", punto A).
+const QUOTA_COOLDOWN_MS = 30_000;
+
 export default function AssistantPage() {
   const [user, setUser] = useState<MeUser | null>(null);
   const [sites, setSites] = useState<SiteListItem[]>([]);
@@ -28,6 +33,17 @@ export default function AssistantPage() {
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const cooldownActive = cooldownUntil != null && now < cooldownUntil;
+  const cooldownSecondsLeft = cooldownActive ? Math.ceil((cooldownUntil! - now) / 1000) : 0;
 
   useEffect(() => {
     Promise.all([fetch("/api/auth/me").then((r) => r.json()), fetch("/api/sites").then((r) => (r.ok ? r.json() : []))]).then(
@@ -69,7 +85,7 @@ export default function AssistantPage() {
 
   async function handleAsk(e: React.FormEvent) {
     e.preventDefault();
-    if (!question.trim() || !selectedSiteId) return;
+    if (!question.trim() || !selectedSiteId || cooldownActive) return;
     setAsking(true);
     setError(null);
     const response = await fetch(`/api/sites/${selectedSiteId}/advisor`, {
@@ -80,6 +96,7 @@ export default function AssistantPage() {
     const data = await response.json();
     if (!response.ok) {
       setError(data.error ?? "Non e' stato possibile ottenere una risposta.");
+      if (data.code === "quota") setCooldownUntil(Date.now() + QUOTA_COOLDOWN_MS);
     } else {
       setHistory((h) => [...h, { question, answer: data.answer }]);
       setQuestion("");
@@ -165,13 +182,18 @@ export default function AssistantPage() {
           />
           <button
             type="submit"
-            disabled={asking}
+            disabled={asking || cooldownActive}
             className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-paper hover:bg-accent-deep disabled:opacity-60"
           >
-            {asking ? "..." : "Chiedi"}
+            {cooldownActive ? `${cooldownSecondsLeft}s` : asking ? "..." : "Chiedi"}
           </button>
         </form>
-        {error && <p className="mt-2 text-sm text-severity-high">{error}</p>}
+        {error && (
+          <p className="mt-2 rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink-soft" role="status">
+            {error}
+            {cooldownActive && ` Riprova tra ${cooldownSecondsLeft}s.`}
+          </p>
+        )}
       </div>
     </DashboardShell>
   );

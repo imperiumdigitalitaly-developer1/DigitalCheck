@@ -5,6 +5,7 @@ import type { AnalysisResult } from "@/lib/analysis/types";
 import { buildAuditAiInput, buildAuditSystemPrompt, buildAuditUserPrompt } from "./audit-prompts";
 import { parseAuditAiAnalysis } from "./audit-schema";
 import { callGemini } from "./gemini-client";
+import { aiErrorClientMessage, type AiErrorKind } from "./errors";
 
 export interface AuditAiResult {
   executiveSummary: string | null;
@@ -17,6 +18,8 @@ export interface AuditAiResult {
   finalAssessment: string | null;
   crossAnalysisNotes: Record<string, string>;
   unavailableReason?: string;
+  /** Motivo strutturato del fallimento (vedi errors.ts) — usato da chi deve mappare lo status HTTP/cooldown, es. il pulsante "Genera approfondimento AI". */
+  errorKind?: AiErrorKind;
 }
 
 // Stessa strategia di cache/in-flight-dedup di geo-analyzer.ts e
@@ -69,7 +72,7 @@ export async function runAuditAiAnalysis(
 async function analyzeUncached(system: string, user: string): Promise<AuditAiResult> {
   const result = await callGemini(system, user, { timeoutMs: 25_000, json: true });
   if (!result.text) {
-    console.error(`[audit-analyzer] chiamata AI fallita: ${result.errorReason ?? "errore sconosciuto"}`);
+    const kind = result.error?.kind ?? "unknown";
     return {
       executiveSummary: null,
       categorySummaries: {},
@@ -80,7 +83,8 @@ async function analyzeUncached(system: string, user: string): Promise<AuditAiRes
       strategicImprovements: [],
       finalAssessment: null,
       crossAnalysisNotes: {},
-      unavailableReason: `Interpretazione AI dell'audit non disponibile: ${result.errorReason ?? "errore sconosciuto"}.`,
+      unavailableReason: `Interpretazione AI dell'audit non disponibile: ${aiErrorClientMessage(kind)}`,
+      errorKind: kind,
     };
   }
 

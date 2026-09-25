@@ -3,6 +3,7 @@ import { buildAiInput, buildSystemPrompt, buildUserPrompt } from "./prompts";
 import { parseAiAnalysis } from "./schema";
 import { createHash } from "crypto";
 import { callGemini } from "./gemini-client";
+import { aiErrorClientMessage } from "./errors";
 
 export interface ContentAnalysisResult {
   analysis: AiAnalysis | null;
@@ -60,12 +61,14 @@ export async function runContentAnalysis(
 async function analyzeUncached(system: string, user: string): Promise<ContentAnalysisResult> {
   const result = await callGemini(system, user, { timeoutMs: 20_000, json: true });
   if (!result.text) {
-    // Loggato oltre a finire in scan.unverifiable: cosi' il motivo e'
-    // visibile nei log del server senza passare dal database.
-    console.error(`[content-analyzer] chiamata AI fallita: ${result.errorReason ?? "errore sconosciuto"}`);
+    // Il dettaglio grezzo (status, corpo risposta) e' gia' stato loggato da
+    // gemini-client.ts: qui si conserva solo un messaggio cordiale, mai il
+    // testo del provider, dato che unavailableReason puo' finire visibile
+    // in punti dell'interfaccia.
+    const kind = result.error?.kind ?? "unknown";
     return {
       analysis: null,
-      unavailableReason: `Analisi AI non disponibile: ${result.errorReason ?? "errore sconosciuto"}.`,
+      unavailableReason: `Analisi AI non disponibile: ${aiErrorClientMessage(kind)}`,
     };
   }
 

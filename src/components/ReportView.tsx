@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { DigitalCheckReport } from "@/types";
 import { ScoreCircle } from "./ScoreCircle";
 import { ConsultationModal } from "./ConsultationModal";
@@ -17,17 +17,63 @@ import { scoreToStatus } from "@/lib/analysis/constants";
 // (brief sezione 17: "Il PDF Pro deve essere il vero prodotto premium").
 // Questa vista e' identica per Free e Pro: cambia solo cosa il PDF
 // scaricabile contiene.
+// Dopo un errore di quota (429) il pulsante resta disabilitato per questo
+// tempo: ritentare subito peggiorerebbe solo il rate limit condiviso da
+// tutte le funzioni AI (brief "gestione errori AI", punto A).
+const QUOTA_COOLDOWN_MS = 30_000;
+
 export function ReportView({
   report,
   plan,
   onUpgrade,
+  siteId,
+  scanId,
 }: {
   report: DigitalCheckReport;
   plan: "FREE" | "PRO";
   onUpgrade?: () => void;
+  /** Se presenti insieme, e l'analisi AI dell'audit era fallita, mostra il pulsante "Genera approfondimento AI". */
+  siteId?: string;
+  scanId?: string;
 }) {
   const [showConsultation, setShowConsultation] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenerated, setRegenerated] = useState(false);
+  const [regenerateError, setRegenerateError] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const fullReportsEnabled = getPlanFeatures(plan).fullReports;
+  const aiEnabled = getPlanFeatures(plan).ai;
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const cooldownActive = cooldownUntil != null && now < cooldownUntil;
+  const cooldownSecondsLeft = cooldownActive ? Math.ceil((cooldownUntil! - now) / 1000) : 0;
+  const canRegenerate = aiEnabled && siteId && scanId && !report.aiInsightsAvailable;
+
+  async function handleRegenerateAi() {
+    if (!siteId || !scanId || regenerating || cooldownActive) return;
+    setRegenerating(true);
+    setRegenerateError(null);
+    try {
+      const response = await fetch(`/api/sites/${siteId}/scan/${scanId}/regenerate-ai`, { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) {
+        setRegenerateError(data.error ?? "Non e' stato possibile generare l'approfondimento AI.");
+        if (data.code === "quota") setCooldownUntil(Date.now() + QUOTA_COOLDOWN_MS);
+      } else {
+        setRegenerated(true);
+      }
+    } catch {
+      setRegenerateError("Connessione non riuscita. Riprova.");
+    } finally {
+      setRegenerating(false);
+    }
+  }
 
   return (
     <div className="space-y-10">
@@ -42,6 +88,40 @@ export function ReportView({
           <p className="mt-2 text-ink-soft">{report.businessImpactSummary}</p>
         </div>
       </section>
+
+      {canRegenerate && (
+        <section className="rounded-[14px] border border-dashed border-line bg-white p-6 text-center">
+          {regenerated ? (
+            <p className="text-sm text-ink-soft">
+              Approfondimento AI generato: sara' incluso nel PDF e nell'assistente da ora in poi.
+            </p>
+          ) : (
+            <>
+              <h3 className="font-display text-lg">Approfondimento AI non incluso in questa versione del report</h3>
+              <p className="mx-auto mt-1 max-w-prose text-sm text-ink-soft">
+                Le indicazioni si basano sui controlli tecnici automatici. Puoi generare ora l'interpretazione AI
+                dell'audit: verra' salvata e inclusa nel PDF.
+              </p>
+              <button
+                onClick={handleRegenerateAi}
+                disabled={regenerating || cooldownActive}
+                className="mt-4 rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-white hover:bg-accent-deep disabled:opacity-60"
+              >
+                {cooldownActive
+                  ? `Riprova tra ${cooldownSecondsLeft}s`
+                  : regenerating
+                    ? "Generazione in corso..."
+                    : "Genera approfondimento AI"}
+              </button>
+              {regenerateError && (
+                <p className="mx-auto mt-3 max-w-prose rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink-soft" role="status">
+                  {regenerateError}
+                </p>
+              )}
+            </>
+          )}
+        </section>
+      )}
 
       {/* Panoramica per categoria: 7 categorie + GEO, solo score/stato/sintesi */}
       <section>
