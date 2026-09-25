@@ -67,8 +67,12 @@ export function drawGeoOverviewPage(canvas: PdfCanvas, geo: GeoReport) {
   // Stessa riserva difensiva degli header di categoria (category-section.ts
   // drawCategoryHeader): la sezione GEO non apre piu' sempre una pagina
   // nuova, quindi va garantito lo spazio per header + score hero prima di
-  // iniziare a disegnare (redesign PDF, sezione 25).
-  canvas.ensureSpace(190);
+  // iniziare a disegnare (redesign PDF, sezione 25). 210 invece di 190:
+  // il gauge (diametro 92) disegna direttamente sulla pagina senza
+  // ensureSpace() proprio, quindi il margine deve coprire per intero
+  // header + divider + gauge + etichetta di stato sotto, non solo una
+  // stima approssimata (bug: etichetta a ridosso della fascia footer).
+  canvas.ensureSpace(210);
   if (!canvas.isAtPageTop()) {
     canvas.divider();
     canvas.y -= 6;
