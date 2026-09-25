@@ -12,6 +12,9 @@ export interface AuditAiResult {
   mainStrengths: string[];
   mainWeaknesses: string[];
   strategicRecommendations: string[];
+  quickWins: string[];
+  strategicImprovements: string[];
+  finalAssessment: string | null;
   crossAnalysisNotes: Record<string, string>;
   unavailableReason?: string;
 }
@@ -73,6 +76,9 @@ async function analyzeUncached(system: string, user: string): Promise<AuditAiRes
       mainStrengths: [],
       mainWeaknesses: [],
       strategicRecommendations: [],
+      quickWins: [],
+      strategicImprovements: [],
+      finalAssessment: null,
       crossAnalysisNotes: {},
       unavailableReason: `Interpretazione AI dell'audit non disponibile: ${result.errorReason ?? "errore sconosciuto"}.`,
     };
@@ -87,6 +93,9 @@ async function analyzeUncached(system: string, user: string): Promise<AuditAiRes
       mainStrengths: [],
       mainWeaknesses: [],
       strategicRecommendations: [],
+      quickWins: [],
+      strategicImprovements: [],
+      finalAssessment: null,
       crossAnalysisNotes: {},
       unavailableReason: "Interpretazione AI dell'audit non disponibile: la risposta del modello non era conforme al formato atteso.",
     };
@@ -98,6 +107,9 @@ async function analyzeUncached(system: string, user: string): Promise<AuditAiRes
     mainStrengths: parsed.data.main_strengths,
     mainWeaknesses: parsed.data.main_weaknesses,
     strategicRecommendations: parsed.data.strategic_recommendations,
+    quickWins: parsed.data.quick_wins,
+    strategicImprovements: parsed.data.strategic_improvements,
+    finalAssessment: parsed.data.final_assessment || null,
     crossAnalysisNotes: parsed.data.cross_analysis_notes,
   };
 }

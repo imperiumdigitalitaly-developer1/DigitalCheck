@@ -7,7 +7,7 @@ import { computeActionPlan } from "@/lib/analysis/action-plan";
 import { GEO_WEIGHT } from "@/lib/analysis/master-score";
 import type { AnalysisStatus, AnalysisResult, DataAvailability, SubScore } from "@/lib/analysis/types";
 import type { CrossAnalysisInsight } from "@/lib/analysis/cross-analysis";
-import type { AiAnalysis, CategoryKey, DigitalCheckReport } from "@/types";
+import type { AiAnalysis, AuditAiInsights, CategoryKey, DigitalCheckReport } from "@/types";
 import type { AnswerabilityQuery, EntityData, GeoReport, InformationCompletenessItem } from "@/lib/geo/geo-types";
 
 export async function buildReportFromScan(scanId: string): Promise<DigitalCheckReport | null> {
@@ -92,8 +92,8 @@ export async function buildReportFromScan(scanId: string): Promise<DigitalCheckR
           status: (s.status as AnalysisStatus) ?? scoreToStatus(s.score),
           dataAvailability: (s.dataAvailability as DataAvailability) ?? "verified",
           subScores: (s.subScores as unknown as SubScore[]) ?? [],
-          metrics: {},
-          strengths: [],
+          metrics: (s.metrics as unknown as AnalysisResult["metrics"]) ?? {},
+          strengths: s.strengths,
           findings: categoryIssues.map((i) => ({
             title: i.title,
             severity: fromDbSeverity5(i.severity),
@@ -123,6 +123,21 @@ export async function buildReportFromScan(scanId: string): Promise<DigitalCheckR
 
   const crossAnalysis = (scan.auditCrossAnalysis as unknown as CrossAnalysisInsight[] | null) ?? [];
   const actionPlan = hasAuditData ? computeActionPlan(analyses, geo?.issues ?? []) : [];
+
+  // Interpretazione AI dell'intero audit (brief redesign PDF sezione 19):
+  // ricostruita SOLO se auditAiAvailable era true al momento dello scan —
+  // segnale esplicito, mai dedotto da un campo che ha sempre un fallback.
+  const aiInsights: AuditAiInsights | null = scan.auditAiAvailable
+    ? {
+        executiveInterpretation: scan.auditExecutiveSummary ?? scan.businessImpactSummary ?? "",
+        mainStrengths: scan.strengths,
+        mainWeaknesses: Array.from(new Set(actionPlan.slice(0, 6).map((i) => i.title))),
+        strategicPriorities: scan.recommendations.map((r) => r.title),
+        quickWins: scan.auditQuickWins,
+        strategicImprovements: scan.auditStrategicImprovements,
+        finalAssessment: scan.auditFinalAssessment ?? "",
+      }
+    : null;
 
   return {
     requestedUrl: scan.site.url,
@@ -159,5 +174,7 @@ export async function buildReportFromScan(scanId: string): Promise<DigitalCheckR
     masterScoreWeights,
     crossAnalysis,
     actionPlan,
+    aiInsightsAvailable: scan.auditAiAvailable,
+    aiInsights,
   };
 }

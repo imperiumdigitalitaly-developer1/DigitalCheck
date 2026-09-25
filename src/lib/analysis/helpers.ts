@@ -70,7 +70,7 @@ export function buildAnalysisResult(input: {
   strengths: string[];
   findings: Finding[];
   recommendations: Recommendation[];
-  metrics: Record<string, string | number | boolean | null>;
+  metrics: AnalysisResult["metrics"];
   shortSummary: string;
   notes?: string;
 }): AnalysisResult {

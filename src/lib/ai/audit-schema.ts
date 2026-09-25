@@ -12,6 +12,12 @@ export const auditAiAnalysisSchema = z.object({
   main_strengths: z.array(z.string()).transform((a) => a.slice(0, LIST_MAX)),
   main_weaknesses: z.array(z.string()).transform((a) => a.slice(0, LIST_MAX)),
   strategic_recommendations: z.array(z.string()).transform((a) => a.slice(0, LIST_MAX)),
+  // Redesign PDF (brief sezione 19): distinzione tra interventi rapidi a
+  // basso sforzo e interventi piu' strutturali — entrambi derivati SOLO
+  // dai problemi gia' rilevati, mai da un "effort" stimato senza base dati.
+  quick_wins: z.array(z.string()).transform((a) => a.slice(0, LIST_MAX)).default([]),
+  strategic_improvements: z.array(z.string()).transform((a) => a.slice(0, LIST_MAX)).default([]),
+  final_assessment: z.string().transform((s) => s.slice(0, SUMMARY_MAX_CHARS)).default(""),
   cross_analysis_notes: z.record(z.string(), z.string()).default({}),
 });
 

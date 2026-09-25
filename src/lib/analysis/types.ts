@@ -62,7 +62,9 @@ export interface AnalysisResult {
   // Metriche grezze rilevate, per mostrarle nel PDF Pro senza doverle
   // ricalcolare (brief sezione 6: "dato misurato" vs raccomandazione).
   // Valore null esplicito quando non disponibile — mai omesso silenziosamente.
-  metrics: Record<string, string | number | boolean | null>;
+  // L'elenco {label,present}[] copre dati tabellari gia' calcolati (es.
+  // Security Headers): resta un dato grezzo, non una nuova analisi.
+  metrics: Record<string, string | number | boolean | null | { label: string; present: boolean }[]>;
   strengths: string[];
   findings: Finding[];
   recommendations: Recommendation[];

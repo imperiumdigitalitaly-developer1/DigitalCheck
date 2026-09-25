@@ -90,7 +90,7 @@ export function scoreContentStructure(
       whyItMatters:
         "Frasi generiche e intercambiabili tra siti diversi non aggiungono informazione utile: un sistema che cerca di rispondere a una domanda concreta le ignora o non riesce a usarle.",
       recommendation: 'Sostituisci le affermazioni generiche con dettagli specifici e verificabili (es. non "qualita\' eccellente" ma cosa, concretamente, viene offerto).',
-      example: 'Invece di "Offriamo soluzioni innovative" → "Realizziamo siti web per strutture ricettive e attivita\' locali".',
+      example: 'Invece di "Offriamo soluzioni innovative" scrivi "Realizziamo siti web per strutture ricettive e attivita\' locali".',
       severity: "low",
     });
   }
