@@ -160,7 +160,7 @@ export default function AnalyzeSitePage() {
       </p>
 
       {status !== "done" && (
-        <form onSubmit={handleSubmit} className="mt-6 max-w-xl space-y-3 rounded-lg border border-line bg-white p-6">
+        <form onSubmit={handleSubmit} className="mt-6 max-w-xl space-y-3 rounded-[14px] border border-line bg-white p-6">
           <label htmlFor="url" className="text-sm text-ink-soft">
             URL del sito
           </label>
@@ -249,7 +249,7 @@ export default function AnalyzeSitePage() {
 
       {status === "done" && report && (
         <div className="mt-8 space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-white p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-line bg-white p-4">
             <p className="text-sm text-ink-soft">Analisi completata.</p>
             <div className="flex gap-3">
               {siteId && (

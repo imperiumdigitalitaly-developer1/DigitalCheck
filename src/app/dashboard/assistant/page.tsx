@@ -140,7 +140,7 @@ export default function AssistantPage() {
         </select>
       </div>
 
-      <div className="mt-6 rounded-lg border border-line bg-white p-6">
+      <div className="mt-6 rounded-[14px] border border-line bg-white p-6">
         {history.length === 0 && (
           <p className="text-sm text-ink-soft">
             Fai una domanda sul sito selezionato — es. &quot;come miglioro il punteggio SEO?&quot; o &quot;spiegami il

@@ -32,7 +32,7 @@ export function ReportView({
   return (
     <div className="space-y-10">
       {/* DigitalCheck Score + sintesi esecutiva */}
-      <section className="flex flex-col items-center gap-6 rounded-lg border border-line bg-white p-8 text-center sm:flex-row sm:text-left">
+      <section className="flex flex-col items-center gap-6 rounded-[14px] border border-line bg-white p-8 text-center sm:flex-row sm:text-left">
         <ScoreCircle score={report.overallScore} />
         <div className="max-w-prose">
           <p className="text-sm uppercase tracking-wide text-ink-soft">

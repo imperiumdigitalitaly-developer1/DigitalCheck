@@ -54,7 +54,7 @@ export default function ReportsPage() {
       ) : (
         <div className="mt-6 space-y-3">
           {reports.map((r) => (
-            <div key={r.scanId} className="flex items-center justify-between gap-4 rounded-lg border border-line bg-white p-4">
+            <div key={r.scanId} className="flex items-center justify-between gap-4 rounded-[14px] border border-line bg-white p-4">
               <div className="flex min-w-0 items-center gap-4">
                 {r.overallScore != null && (
                   <div className="shrink-0">

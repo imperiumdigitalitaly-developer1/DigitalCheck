@@ -52,8 +52,8 @@ export function ChatWidget() {
   return (
     <div className="app-touch fixed bottom-4 right-4 z-50">
       {open && (
-        <div className="mb-3 flex h-[min(24rem,calc(100dvh-6.5rem))] w-[min(20rem,calc(100vw-2rem))] flex-col rounded-lg border border-line bg-white shadow-xl">
-          <div className="flex items-center justify-between rounded-t-lg border-b border-line bg-ink py-1 pl-4 pr-4">
+        <div className="mb-3 flex h-[min(24rem,calc(100dvh-6.5rem))] w-[min(20rem,calc(100vw-2rem))] flex-col rounded-[14px] border border-line bg-white shadow-xl">
+          <div className="flex items-center justify-between rounded-t-[14px] border-b border-line bg-ink py-1 pl-4 pr-4">
             <span className="font-display text-sm text-paper">Assistente DigitalCheck</span>
             <button
               onClick={() => setOpen(false)}

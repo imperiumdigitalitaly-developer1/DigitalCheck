@@ -302,7 +302,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
               (title, meta description, correzioni). Tocca per saperne di piu'.
             </button>
           ) : (
-            <div className="mt-3 rounded-lg border border-line bg-white p-5">
+            <div className="mt-3 rounded-[14px] border border-line bg-white p-5">
               {advisorHistory.length === 0 && (
                 <p className="text-sm text-ink-soft">
                   Fai una domanda sul sito — es. &quot;scrivimi una meta description migliore&quot; o
@@ -349,7 +349,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
               nostro team di farlo per te.
             </button>
           ) : (
-            <form onSubmit={handleRequestHelp} className="mt-3 rounded-lg border border-line bg-white p-5">
+            <form onSubmit={handleRequestHelp} className="mt-3 rounded-[14px] border border-line bg-white p-5">
               <textarea
                 value={helpMessage}
                 onChange={(e) => setHelpMessage(e.target.value)}
@@ -373,7 +373,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
         <div className="mt-4 space-y-2">
           {site.scans.length === 0 && <p className="text-ink-soft">Nessuna scansione ancora eseguita.</p>}
           {site.scans.map((scan) => (
-            <div key={scan.id} className="rounded-lg border border-line bg-white p-4">
+            <div key={scan.id} className="rounded-[14px] border border-line bg-white p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm text-ink-soft">{new Date(scan.startedAt).toLocaleString("it-IT")}</p>

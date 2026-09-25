@@ -336,7 +336,7 @@ function GestionaleView() {
                   <Link
                     key={s.siteId}
                     href={`/dashboard/site/${s.siteId}`}
-                    className="flex min-h-[44px] items-center justify-between gap-3 rounded-lg border border-line bg-white p-4 hover:border-accent"
+                    className="flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] border border-line bg-white p-4 hover:border-accent"
                   >
                     <span className="min-w-0 break-words text-sm">{s.url}</span>
                     <span className="shrink-0 text-right text-sm text-ink-soft">
@@ -359,7 +359,7 @@ function GestionaleView() {
             ) : (
               <ul className="mt-3 space-y-2">
                 {overview.recurringIssues.map((i) => (
-                  <li key={i.title} className="rounded-lg border border-line bg-white p-3 text-sm">
+                  <li key={i.title} className="rounded-[14px] border border-line bg-white p-3 text-sm">
                     <span className="font-medium">{i.title}</span>{" "}
                     <span className="text-ink-soft">— presente su {i.siteCount} siti</span>
                   </li>
@@ -375,7 +375,7 @@ function GestionaleView() {
             ) : (
               <ul className="mt-3 space-y-2">
                 {overview.alerts.map((a) => (
-                  <li key={a.id} className="rounded-lg border border-line bg-white p-3 text-sm text-ink-soft">
+                  <li key={a.id} className="rounded-[14px] border border-line bg-white p-3 text-sm text-ink-soft">
                     {a.message}
                     <span className="ml-2 text-xs">{new Date(a.createdAt).toLocaleDateString("it-IT")}</span>
                   </li>
@@ -387,7 +387,7 @@ function GestionaleView() {
       )}
 
       {tab === "analytics" && (
-        <div className="mt-6 rounded-lg border border-line bg-white p-4 sm:p-6">
+        <div className="mt-6 rounded-[14px] border border-line bg-white p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg">Web Analytics</h2>
             <StatusBadge status={connections?.analytics.connected ? "connected" : "not_connected"} />
@@ -432,7 +432,7 @@ function GestionaleView() {
       )}
 
       {tab === "search-console" && (
-        <div className="mt-6 rounded-lg border border-line bg-white p-4 sm:p-6">
+        <div className="mt-6 rounded-[14px] border border-line bg-white p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg">Search Console</h2>
             <StatusBadge status={connections?.searchConsole.connected ? "connected" : "not_connected"} />
@@ -478,7 +478,7 @@ function GestionaleView() {
 
       {tab === "metrics" && (
         <div className="mt-6 space-y-6">
-          <div className="rounded-lg border border-line bg-white p-4 sm:p-6">
+          <div className="rounded-[14px] border border-line bg-white p-4 sm:p-6">
             <h2 className="font-display text-lg">Andamento Digital Score</h2>
             <div className="mt-4">
               <ScoreTrendChart
@@ -490,7 +490,7 @@ function GestionaleView() {
           </div>
 
           {metrics && metrics.points.length > 0 && (
-            <div className="rounded-lg border border-line bg-white p-4 sm:p-6">
+            <div className="rounded-[14px] border border-line bg-white p-4 sm:p-6">
               <h2 className="font-display text-lg">Ultimi punteggi per categoria (SEO)</h2>
               <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
                 {Object.entries(metrics.points[metrics.points.length - 1]?.categoryScores ?? {}).map(([key, score]) => (
@@ -500,7 +500,7 @@ function GestionaleView() {
             </div>
           )}
 
-          <div className="rounded-lg border border-line bg-white p-4 sm:p-6">
+          <div className="rounded-[14px] border border-line bg-white p-4 sm:p-6">
             <h2 className="font-display text-lg">Andamento GEO Score</h2>
             <p className="mt-1 text-xs text-ink-soft">
               Predisposizione del sito a essere compreso e citato da motori di ricerca generativi e AI answer engine.
@@ -515,7 +515,7 @@ function GestionaleView() {
           </div>
 
           {metrics && metrics.points.some((p) => p.geoCategoryScores) && (
-            <div className="rounded-lg border border-line bg-white p-4 sm:p-6">
+            <div className="rounded-[14px] border border-line bg-white p-4 sm:p-6">
               <h2 className="font-display text-lg">Ultimi punteggi per categoria (GEO)</h2>
               <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
                 {Object.entries(
@@ -530,7 +530,7 @@ function GestionaleView() {
       )}
 
       {tab === "observability" && (
-        <div className="mt-6 max-w-xl rounded-lg border border-line bg-white p-6">
+        <div className="mt-6 max-w-xl rounded-[14px] border border-line bg-white p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg">Observability</h2>
             {observability?.monitor ? (
@@ -564,7 +564,7 @@ function GestionaleView() {
               ) : (
                 <ul className="mt-2 space-y-2">
                   {observability.monitor.incidents.map((incident, i) => (
-                    <li key={i} className="rounded-lg border border-line p-3 text-sm">
+                    <li key={i} className="rounded-[14px] border border-line p-3 text-sm">
                       <span className="font-medium">{INCIDENT_LABEL[incident.kind]}</span>{" "}
                       <span className="text-ink-soft">
                         — {new Date(incident.at).toLocaleString("it-IT")}
