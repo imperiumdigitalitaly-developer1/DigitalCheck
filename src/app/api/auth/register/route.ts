@@ -77,6 +77,6 @@ export async function POST(request: NextRequest) {
     devVerifyLink:
       !mailResult.sent && process.env.NODE_ENV !== "production" ? verifyLink : undefined,
   });
-  response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions);
+  response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions());
   return response;
 }

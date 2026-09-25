@@ -27,6 +27,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +39,7 @@ function LoginForm() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -103,6 +104,29 @@ function LoginForm() {
             className="w-full rounded-md border border-line bg-white px-3 py-2.5 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/15"
           />
         </div>
+
+        <label htmlFor="rememberMe" className="flex min-h-[44px] cursor-pointer select-none items-center gap-2.5 -my-1">
+          <input
+            id="rememberMe"
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="h-[18px] w-[18px] shrink-0 cursor-pointer rounded border-line-strong accent-accent focus:outline-none focus:ring-2 focus:ring-accent/30 focus:ring-offset-1"
+          />
+          <span className="inline-flex items-center gap-1.5 text-sm text-ink-soft">
+            Rimani connesso
+            <span
+              title="Mantieni l'accesso a DigitalCheck anche quando chiudi il browser."
+              className="inline-flex h-[15px] w-[15px] cursor-help items-center justify-center rounded-full text-ink-faint"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-full w-full">
+                <circle cx="12" cy="12" r="9.5" />
+                <line x1="12" y1="10.5" x2="12" y2="16.5" strokeLinecap="round" />
+                <circle cx="12" cy="7.3" r="0.9" fill="currentColor" stroke="none" />
+              </svg>
+            </span>
+          </span>
+        </label>
 
         {error && <p className="text-sm text-severity-high">{error}</p>}
 
