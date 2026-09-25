@@ -161,9 +161,14 @@ export async function runScanPipeline(
       unverifiable.push(`${CATEGORY_LABELS[a.category]}: ${a.notes ?? "dato parziale o non disponibile automaticamente."}`);
     }
   }
-  if (contentAiUnavailable) unverifiable.push(contentAiUnavailable);
-  if (geoAi.unavailableReason) unverifiable.push(geoAi.unavailableReason);
-  if (auditAi.unavailableReason) unverifiable.push(auditAi.unavailableReason);
+  // Messaggi generici, mai il dettaglio tecnico del provider (status HTTP,
+  // corpo dell'errore, quota API): quel dettaglio resta SOLO nei log
+  // (console.error dentro content-analyzer/geo-analyzer/audit-analyzer),
+  // non deve mai raggiungere il cliente nel report o nel PDF (brief
+  // redesign PDF, sezione 20).
+  if (contentAiUnavailable) unverifiable.push("Interpretazione AI dei contenuti non disponibile per questa scansione.");
+  if (geoAi.unavailableReason) unverifiable.push("Interpretazione AI del GEO non disponibile per questa scansione.");
+  if (auditAi.unavailableReason) unverifiable.push("Interpretazione AI dell'audit non disponibile per questa scansione.");
 
   // ---- Campi legacy, derivati dal nuovo sistema per compatibilita' con i
   // consumer esistenti (Gestionale, storico scan, PDF non ancora migrato) —
@@ -205,6 +210,19 @@ export async function runScanPipeline(
     auditAi.executiveSummary ??
     `DigitalCheck Score complessivo: ${masterScore}/100 (${STATUS_LABEL[scoreToStatus(masterScore)]}). Interpretazione AI non disponibile in questa scansione: il punteggio si basa sui controlli tecnici automatici delle 8 categorie.`;
 
+  const aiInsightsAvailable = auditAi.executiveSummary != null;
+  const aiInsights: DigitalCheckReport["aiInsights"] = aiInsightsAvailable
+    ? {
+        executiveInterpretation: businessImpactSummary,
+        mainStrengths: strengths,
+        mainWeaknesses: Array.from(new Set(actionPlan.slice(0, 6).map((i) => i.title))),
+        strategicPriorities: recommendedActions,
+        quickWins: auditAi.quickWins,
+        strategicImprovements: auditAi.strategicImprovements,
+        finalAssessment: auditAi.finalAssessment ?? "",
+      }
+    : null;
+
   const report: DigitalCheckReport = {
     requestedUrl: url,
     businessType,
@@ -225,6 +243,8 @@ export async function runScanPipeline(
     masterScoreWeights,
     crossAnalysis: crossAnalysisWithAiNotes,
     actionPlan,
+    aiInsightsAvailable,
+    aiInsights,
   };
 
   return { ok: true, crawl, facts, report };

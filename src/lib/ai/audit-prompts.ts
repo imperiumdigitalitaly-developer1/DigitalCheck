@@ -81,7 +81,10 @@ export function buildAuditUserPrompt(payload: AuditAiInputPayload): string {
   "category_summaries": { "<category_key>": string } (una frase sintetica PER OGNI categoria elencata in "categories" e, se presente, per "geo" — descrittiva dello stato generale, MAI un elenco di problemi o consigli: es. "Il sito presenta una struttura SEO complessivamente solida, con margini di miglioramento nella copertura dei contenuti."),
   "main_strengths": string[] (max 4, specifiche a questo sito, basate solo sui punteggi/findings forniti),
   "main_weaknesses": string[] (max 4, idem),
-  "strategic_recommendations": string[] (max 5, azioni di alto livello ordinate per importanza, basate SOLO sui problemi elencati),
+  "strategic_recommendations": string[] (max 5, le priorita' strategiche piu' importanti, in linguaggio naturale, ordinate per importanza, basate SOLO sui problemi elencati),
+  "quick_wins": string[] (max 5, tra i problemi elencati scegli quelli che sembrano richiedere un intervento relativamente semplice/rapido da sistemare, in linguaggio naturale — solo se puoi giudicarlo in modo ragionevole dai dati, altrimenti lascia l'array vuoto),
+  "strategic_improvements": string[] (max 5, interventi piu' strutturali/di fondo tra quelli elencati, distinti dai quick_wins),
+  "final_assessment": string (2-3 frasi di chiusura del report: valutazione complessiva finale, diversa nel taglio dall'executive_summary iniziale — non ripeterlo con le stesse parole),
   "cross_analysis_notes": { "<pair_label>": string } (per OGNI voce di cross_analysis_pairs, 1-2 frasi che spiegano la correlazione in modo specifico a questo sito, MAI generiche)
 }`;
 
@@ -89,5 +92,6 @@ export function buildAuditUserPrompt(payload: AuditAiInputPayload): string {
     `Dati dell'audit:\n${JSON.stringify(payload, null, 2)}`,
     `\nProduci un JSON conforme a questo schema:\n${schemaHint}`,
     `\nL'obiettivo dichiarato dal proprietario dell'attivita' e' "${payload.goal}": tienine conto nell'executive_summary e nelle strategic_recommendations.`,
+    `\nNon inventare un "effort" o una difficolta' di implementazione che non puoi dedurre ragionevolmente dai dati forniti.`,
   ].join("\n");
 }

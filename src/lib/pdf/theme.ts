@@ -1,5 +1,5 @@
 import { rgb } from "pdf-lib";
-import type { IssueCategory, IssueSeverity } from "@/types";
+import type { CategoryKey, IssueCategory, IssueSeverity } from "@/types";
 import type { GeoIssueSeverity } from "@/lib/geo/geo-types";
 import type { Severity } from "@/lib/analysis/types";
 
@@ -19,16 +19,20 @@ export const COLOR = {
   white: rgb(1, 1, 1),
 } as const;
 
+// Palette di severita' disciplinata (redesign PDF sezione 2): solo 3 tinte
+// con un significato fisso — rosso SOLO per problemi realmente critici,
+// arancione/ambra per attenzione, grigio neutro per il resto — niente
+// quarta tinta "blu" di riempimento che diluisce il significato del colore.
 export const SEVERITY_COLOR: Record<IssueSeverity, ReturnType<typeof rgb>> = {
-  high: rgb(0xb4 / 255, 0x48 / 255, 0x3f / 255),
-  medium: rgb(0xc9 / 255, 0x7a / 255, 0x3d / 255),
-  low: rgb(0x3f / 255, 0x7d / 255, 0x8f / 255),
+  high: rgb(0xa8 / 255, 0x3a / 255, 0x32 / 255),
+  medium: rgb(0xc1 / 255, 0x7f / 255, 0x2e / 255),
+  low: rgb(0x6b / 255, 0x70 / 255, 0x79 / 255),
 };
 
 export const SEVERITY_SOFT_COLOR: Record<IssueSeverity, ReturnType<typeof rgb>> = {
-  high: rgb(0xf6 / 255, 0xe8 / 255, 0xe6 / 255),
-  medium: rgb(0xf8 / 255, 0xed / 255, 0xe0 / 255),
-  low: rgb(0xe6 / 255, 0xef / 255, 0xf1 / 255),
+  high: rgb(0xf7 / 255, 0xe9 / 255, 0xe7 / 255),
+  medium: rgb(0xfa / 255, 0xef / 255, 0xdd / 255),
+  low: rgb(0xec / 255, 0xed / 255, 0xef / 255),
 };
 
 // Solo 3 livelli reali di severita' (vedi types/index.ts): niente quarto
@@ -45,17 +49,17 @@ export const SEVERITY_LABEL: Record<IssueSeverity, string> = {
 // per restare distinguibile dai 3 livelli SEO quando le due liste
 // compaiono nella stessa pagina (brief GEO sezione 22, pagina combinata).
 export const GEO_SEVERITY_COLOR: Record<GeoIssueSeverity, ReturnType<typeof rgb>> = {
-  critical: rgb(0xb4 / 255, 0x48 / 255, 0x3f / 255),
-  high: rgb(0xc9 / 255, 0x7a / 255, 0x3d / 255),
-  medium: rgb(0x3f / 255, 0x7d / 255, 0x8f / 255),
-  low: rgb(0x6b / 255, 0x6f / 255, 0x76 / 255),
+  critical: rgb(0x8f / 255, 0x30 / 255, 0x29 / 255),
+  high: rgb(0xa8 / 255, 0x3a / 255, 0x32 / 255),
+  medium: rgb(0xc1 / 255, 0x7f / 255, 0x2e / 255),
+  low: rgb(0x6b / 255, 0x70 / 255, 0x79 / 255),
 };
 
 export const GEO_SEVERITY_SOFT_COLOR: Record<GeoIssueSeverity, ReturnType<typeof rgb>> = {
-  critical: rgb(0xf6 / 255, 0xe8 / 255, 0xe6 / 255),
-  high: rgb(0xf8 / 255, 0xed / 255, 0xe0 / 255),
-  medium: rgb(0xe6 / 255, 0xef / 255, 0xf1 / 255),
-  low: rgb(0xea / 255, 0xea / 255, 0xeb / 255),
+  critical: rgb(0xf5 / 255, 0xe4 / 255, 0xe2 / 255),
+  high: rgb(0xf7 / 255, 0xe9 / 255, 0xe7 / 255),
+  medium: rgb(0xfa / 255, 0xef / 255, 0xdd / 255),
+  low: rgb(0xec / 255, 0xed / 255, 0xef / 255),
 };
 
 export const GEO_SEVERITY_LABEL: Record<GeoIssueSeverity, string> = {
@@ -86,18 +90,39 @@ export const SEVERITY5_SOFT_COLOR: Record<Severity, ReturnType<typeof rgb>> = {
   info: rgb(0xf0 / 255, 0xf0 / 255, 0xf1 / 255),
 };
 
+// Allineato esattamente alle 5 fasce centralizzate di scoreToStatus()
+// (src/lib/analysis/constants.ts: 40/60/75/90) — stessa disciplina di
+// colore delle severita': rosso solo sotto la soglia critica, ambra per le
+// fasce che richiedono attenzione, teal (il colore del brand) per le fasce
+// positive. Nessun blu di riempimento (redesign PDF, sezione 2).
 const SCORE_STOPS: { max: number; color: ReturnType<typeof rgb> }[] = [
-  { max: 40, color: rgb(0xb4 / 255, 0x48 / 255, 0x3f / 255) },
-  { max: 60, color: rgb(0xc9 / 255, 0x7a / 255, 0x3d / 255) },
-  { max: 75, color: rgb(0x3f / 255, 0x7d / 255, 0x8f / 255) },
-  { max: 90, color: rgb(0x1f / 255, 0x6f / 255, 0x64 / 255) },
-  { max: 101, color: rgb(0x2f / 255, 0x7a / 255, 0x4f / 255) },
+  { max: 40, color: rgb(0x8f / 255, 0x30 / 255, 0x29 / 255) }, // critical
+  { max: 60, color: rgb(0xa8 / 255, 0x3a / 255, 0x32 / 255) }, // poor
+  { max: 75, color: rgb(0xc1 / 255, 0x7f / 255, 0x2e / 255) }, // needs_improvement
+  { max: 90, color: rgb(0x1f / 255, 0x6f / 255, 0x64 / 255) }, // good (accent)
+  { max: 101, color: rgb(0x16 / 255, 0x54 / 255, 0x4b / 255) }, // excellent (accentDeep-ish)
 ];
 
 export function scoreColor(score: number): ReturnType<typeof rgb> {
   const stop = SCORE_STOPS.find((s) => score < s.max) ?? SCORE_STOPS[SCORE_STOPS.length - 1];
   return (stop as (typeof SCORE_STOPS)[number]).color;
 }
+
+// Monogramma a 2 lettere per categoria (redesign PDF, sezione 6: "[ICONA]
+// NOME CATEGORIA"): pdf-lib non ha un motore di icone/SVG esterne, quindi
+// invece di un glifo grafico si usa un badge quadrato con iniziali,
+// sempre nel duotono del brand (grafite + teal) — coerente su ogni
+// categoria, mai un colore arbitrario per categoria.
+export const CATEGORY_MONOGRAM: Record<CategoryKey | "geo", string> = {
+  seo: "SE",
+  performance: "PF",
+  mobile: "MB",
+  content: "CN",
+  conversion: "CV",
+  accessibility: "AC",
+  technical: "TC",
+  geo: "GE",
+};
 
 // Raggruppa le 5 categorie di ScanIssue (IssueCategory) in etichette
 // leggibili dal cliente per la pagina "Problemi e diagnosi" e per

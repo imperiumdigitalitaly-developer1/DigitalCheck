@@ -198,6 +198,16 @@ model Scan {
   // numero di correlazioni emesse dipende dai dati di QUESTO scan.
   auditExecutiveSummary String?
   auditCrossAnalysis    Json?
+  // Segnale esplicito e inequivocabile che l'interpretazione AI dell'audit
+  // e' riuscita per questo scan (brief redesign PDF sezione 19-20): NON
+  // deducibile da auditExecutiveSummary, che ha sempre un valore (anche di
+  // fallback deterministico) — serve un booleano dedicato perche' il PDF
+  // sappia con certezza quando mostrare il blocco "temporaneamente non
+  // disponibile" invece di contenuti AI a meta'.
+  auditAiAvailable            Boolean  @default(false)
+  auditQuickWins               String[] @default([])
+  auditStrategicImprovements   String[] @default([])
+  auditFinalAssessment         String?
 
   errorCode       String?
   errorMessage    String?
@@ -318,6 +328,15 @@ model ScanScore {
   // Una frase sintetica per la dashboard executive (brief sezione 14):
   // MAI problemi/consigli, solo descrizione generale.
   shortSummary String?
+  // Metriche grezze rilevate (AnalysisResult.metrics — brief redesign PDF,
+  // tabelle Security Headers/Performance gap): senza, un report
+  // ricostruito da uno scan storico perdeva questi dati (restavano solo
+  // nel report generato al momento dello scan). Json perche' la forma
+  // cambia per categoria.
+  metrics Json?
+  // Punti di forza della SINGOLA categoria (AnalysisResult.strengths):
+  // stesso motivo sopra, senza andavano perduti alla ricostruzione.
+  strengths String[] @default([])
 
   @@index([scanId])
 }

@@ -18,7 +18,7 @@ export const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 const HEADER_BAND = 30;
 const FOOTER_BAND = 34;
 
-type Color = ReturnType<typeof rgb>;
+export type Color = ReturnType<typeof rgb>;
 
 interface TextOptions {
   size?: number;
@@ -109,6 +109,17 @@ export class PdfCanvas {
   ensureSpace(height: number) {
     if (this.paginationLocked) return;
     if (this.y - height < this.contentBottom(this.currentChrome)) this.newPage();
+  }
+
+  // Permette a sectionTitle()/agli header di categoria e GEO di capire se
+  // stanno iniziando su una pagina fresca (nessun separatore aggiuntivo
+  // serve) o se stanno continuando il flusso a meta' di una pagina gia'
+  // parzialmente occupata da una sezione precedente (redesign PDF, sezione
+  // 25: evitare pagine con spazio bianco eccessivo lasciando che i
+  // capitoli si susseguano sulla stessa pagina quando c'e' posto, invece
+  // di forzare sempre un'interruzione di pagina tra un capitolo e l'altro).
+  isAtPageTop(): boolean {
+    return this.y >= this.contentTop(this.currentChrome) - 0.5;
   }
 
   get pageCount(): number {
@@ -226,7 +237,18 @@ export class PdfCanvas {
   }
 
   sectionTitle(title: string, opts: { subtitle?: string } = {}) {
-    this.ensureSpace(34);
+    // Riserva spazio sufficiente per titolo + sottotitolo + un minimo di
+    // contenuto a seguire, cosi' un capitolo non parte mai a ridosso del
+    // fondo pagina. Se si sta continuando sulla stessa pagina di un
+    // capitolo precedente (non in cima pagina), un divider marca
+    // chiaramente l'inizio della nuova sezione invece di sprecare una
+    // pagina quasi vuota (redesign PDF, sezione 25).
+    this.ensureSpace(34 + (opts.subtitle ? 14 : 0) + 30);
+    if (!this.isAtPageTop()) {
+      this.y -= 4;
+      this.divider();
+      this.y -= 6;
+    }
     this.text(title, { size: 17, font: "display", color: COLOR.ink, gap: opts.subtitle ? 2 : 10 });
     if (opts.subtitle) this.text(opts.subtitle, { size: 9.5, color: COLOR.inkSoft, gap: 12 });
   }
@@ -402,6 +424,113 @@ export class PdfCanvas {
       color,
     });
     return width;
+  }
+
+  /**
+   * Badge di gravita' prominente (redesign PDF, sezione 7: "il badge deve
+   * essere immediatamente riconoscibile, non la parola dentro un
+   * paragrafo"): piu' grande e pieno (non solo pillola soft) del pill()
+   * generico, pensato per aprire ogni IssueCard. Restituisce la larghezza.
+   */
+  severityBadge(x: number, yTop: number, label: string, color: Color): number {
+    const size = 8.5;
+    const paddingX = 10;
+    const height = 18;
+    const text = label.toUpperCase();
+    const width = this.fontBold.widthOfTextAtSize(text, size) + paddingX * 2;
+    this.roundedRect(x, yTop - height, width, height, { radius: 4, fill: color });
+    this.page.drawText(text, {
+      x: x + paddingX,
+      y: yTop - height + (height - size) / 2 + 1,
+      size,
+      font: this.fontBold,
+      color: COLOR.white,
+    });
+    return width;
+  }
+
+  /**
+   * Badge quadrato con 1-2 lettere (redesign PDF, sezione 6: "[ICONA] NOME
+   * CATEGORIA"): sostituisce un'icona grafica vera, che pdf-lib non puo'
+   * disegnare senza un asset esterno. Restituisce la larghezza (= altezza,
+   * e' un quadrato).
+   */
+  monogramBadge(x: number, yTop: number, text: string, opts: { size?: number; fill?: Color; color?: Color } = {}): number {
+    const box = opts.size ?? 30;
+    const fontSize = box * 0.36;
+    this.roundedRect(x, yTop - box, box, box, { radius: 8, fill: opts.fill ?? COLOR.accentSoft });
+    const textWidth = this.fontBold.widthOfTextAtSize(text, fontSize);
+    this.page.drawText(text, {
+      x: x + (box - textWidth) / 2,
+      y: yTop - box / 2 - fontSize * 0.36,
+      size: fontSize,
+      font: this.fontBold,
+      color: opts.color ?? COLOR.accentDeep,
+    });
+    return box;
+  }
+
+  /**
+   * Box elegante e compatto per metodologia/limitazioni (redesign PDF,
+   * sezione 10/13/25: "MethodologyBox" riutilizzabile, mai un lungo
+   * paragrafo che occupa il centro pagina). Ritorna l'altezza occupata.
+   */
+  calloutBox(
+    kicker: string,
+    text: string,
+    opts: { fill?: Color; kickerColor?: Color; textColor?: Color; maxLines?: number } = {}
+  ): number {
+    const padding = 12;
+    const innerWidth = CONTENT_WIDTH - padding * 2;
+    const kickerH = 12;
+    const textH = this.measure(text, { size: 8.5, maxWidth: innerWidth, lineHeightMult: 1.3, gap: 0, maxLines: opts.maxLines ?? 3 });
+    const boxHeight = padding * 2 + kickerH + textH;
+
+    this.ensureSpace(boxHeight + 8);
+    const top = this.y;
+    this.roundedRect(MARGIN, top - boxHeight, CONTENT_WIDTH, boxHeight, { radius: 9, fill: opts.fill ?? COLOR.paper, border: COLOR.line, borderWidth: 0.75 });
+    this.y = top - padding;
+    this.text(kicker.toUpperCase(), { size: 7.5, font: "bold", color: opts.kickerColor ?? COLOR.inkSoft, x: MARGIN + padding, maxWidth: innerWidth, gap: 4 });
+    this.text(text, { size: 8.5, color: opts.textColor ?? COLOR.inkSoft, x: MARGIN + padding, maxWidth: innerWidth, gap: 0, lineHeightMult: 1.3, maxLines: opts.maxLines ?? 3 });
+    this.y = top - boxHeight - 10;
+    return boxHeight;
+  }
+
+  /**
+   * Tabella semplice a 2 colonne (redesign PDF, sezione 14: Security
+   * Headers come vera tabella HEADER/STATO, non un paragrafo). Colonna
+   * destra allineata a destra con un badge di stato colorato.
+   */
+  keyValueTable(rows: { label: string; value: string; valueColor?: Color; valueSoft?: Color }[]) {
+    const rowHeight = 22;
+    const tableHeight = rows.length * rowHeight;
+    this.ensureSpace(tableHeight + 8);
+    const top = this.y;
+    this.roundedRect(MARGIN, top - tableHeight, CONTENT_WIDTH, tableHeight, { radius: 8, fill: COLOR.white, border: COLOR.line, borderWidth: 0.75 });
+
+    rows.forEach((row, i) => {
+      const rowTop = top - i * rowHeight;
+      if (i > 0) {
+        this.page.drawLine({ start: { x: MARGIN, y: rowTop }, end: { x: MARGIN + CONTENT_WIDTH, y: rowTop }, thickness: 0.5, color: COLOR.line });
+      }
+      this.page.drawText(row.label, { x: MARGIN + 14, y: rowTop - rowHeight / 2 - 3.5, size: 9, font: this.fontRegular, color: COLOR.ink });
+      if (row.valueColor) {
+        const pillW = this.fontBold.widthOfTextAtSize(row.value.toUpperCase(), 7.5) + 16;
+        this.roundedRect(MARGIN + CONTENT_WIDTH - 14 - pillW, rowTop - rowHeight / 2 - 7, pillW, 14, { radius: 7, fill: row.valueSoft ?? row.valueColor });
+        this.page.drawText(row.value.toUpperCase(), {
+          x: MARGIN + CONTENT_WIDTH - 14 - pillW + 8,
+          y: rowTop - rowHeight / 2 - 3,
+          size: 7.5,
+          font: this.fontBold,
+          color: row.valueColor,
+        });
+      } else {
+        const valueWidth = this.fontBold.widthOfTextAtSize(row.value, 9);
+        this.page.drawText(row.value, { x: MARGIN + CONTENT_WIDTH - 14 - valueWidth, y: rowTop - rowHeight / 2 - 3.5, size: 9, font: this.fontBold, color: COLOR.ink });
+      }
+    });
+
+    this.y = top - tableHeight - 10;
   }
 
   footer(): void {

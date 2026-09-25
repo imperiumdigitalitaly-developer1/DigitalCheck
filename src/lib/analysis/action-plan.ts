@@ -15,6 +15,10 @@ export interface ActionPlanItem {
   severity: Severity;
   why: string;
   action: string;
+  // Gia' calcolato da ogni motore di categoria (Recommendation.impact):
+  // undefined per gli item GEO, che non hanno un campo impact distinto
+  // da whyItMatters — mai un valore inventato qui per riempire il vuoto.
+  impact?: string;
 }
 
 // GEO ha 4 livelli (critical/high/medium/low, niente "info"): mappatura
@@ -38,6 +42,7 @@ export function computeActionPlan(analyses: AnalysisResult[], geoIssues: GeoIssu
         severity: rec.severity,
         why: rec.explanation,
         action: rec.action,
+        impact: rec.impact,
       });
     }
   }

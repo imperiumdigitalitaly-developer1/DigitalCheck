@@ -1,30 +1,31 @@
 import type { CategoryKey, DigitalCheckReport } from "@/types";
 import type { PlanType } from "@prisma/client";
+import type { AnalysisStatus } from "@/lib/analysis/types";
 import { STATUS_LABEL, scoreToStatus } from "@/lib/analysis/constants";
 import { CATEGORY_LABELS } from "@/lib/category-labels";
 import { getPlanFeatures } from "@/lib/billing/plan-config";
-import { PdfCanvas, CONTENT_WIDTH, MARGIN, PAGE_WIDTH } from "./canvas";
-import { COLOR, scoreColor } from "./theme";
+import { PdfCanvas, CONTENT_WIDTH, MARGIN, PAGE_WIDTH, type Color } from "./canvas";
+import { COLOR, CATEGORY_MONOGRAM, scoreColor } from "./theme";
 import { drawGeoFreeBlock, drawGeoOverviewPage, drawGeoIssuesPage } from "./geo-section";
 import { drawCategoryReportPage } from "./category-section";
 import { drawCrossAnalysisPage } from "./cross-analysis-section";
 import { drawActionPlanPage } from "./action-plan-section";
+import { drawAiReportPage } from "./ai-report-section";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
 }
 
-// Descrizione statica del metodo di misura, usata solo come fallback
-// quando una categoria non ha una nota specifica (mai dati inventati: e'
-// testo di metodologia, non un'osservazione sul sito analizzato).
-const CATEGORY_METHOD_NOTE: Record<CategoryKey, string> = {
-  seo: "Basato su titolo, meta description, struttura dei titoli, indicizzabilita', dati strutturati e link interni.",
-  performance: "Basato su dati reali di Google PageSpeed Insights (Core Web Vitals) quando disponibili, altrimenti su una stima.",
-  mobile: "Basato su viewport, pattern CSS rilevabili e performance mobile reale, con limiti dichiarati dove non verificabile.",
-  content: "Analisi tecnica e strutturale del contenuto realmente pubblicato.",
-  conversion: "Basato sulla presenza di elementi di conversione pertinenti al tipo di attivita' dichiarato.",
-  accessibility: "Basato su controlli automaticamente verificabili (struttura semantica, immagini, moduli, navigazione).",
-  technical: "Basato su HTTPS, header di sicurezza, architettura e affidabilita' delle risorse.",
+// Frase di interpretazione del punteggio (redesign PDF, sezione 3: "sotto
+// lo score inserisci una frase che spieghi cosa significa realmente il
+// punteggio"). Testo fisso per fascia di stato, mai generato dall'AI ne'
+// specifico al sito: e' una spiegazione della scala, non un'osservazione.
+const SCORE_MEANING: Record<AnalysisStatus, string> = {
+  excellent: "Il sito soddisfa la quasi totalita' dei controlli tecnici e strategici rilevati durante l'audit.",
+  good: "Il sito soddisfa la maggior parte dei controlli rilevati, con alcuni margini di miglioramento circoscritti.",
+  needs_improvement: "Il sito presenta una base funzionante, ma piu' aree richiedono interventi per raggiungere lo standard atteso.",
+  poor: "Il sito presenta lacune significative in piu' aree analizzate, con impatto concreto su visibilita' ed esperienza utente.",
+  critical: "Il sito presenta criticita' diffuse che richiedono un intervento prioritario su piu' fronti.",
 };
 
 // ---------------------------------------------------------------------
@@ -56,7 +57,7 @@ export async function generateFreeReportPdf(report: DigitalCheckReport): Promise
     color: COLOR.accent,
   });
 
-  canvas.text("DigitalCheck Score Report", { size: 14, font: "display", color: COLOR.ink, gap: 3 });
+  canvas.text("Professional Website Audit", { size: 14, font: "display", color: COLOR.ink, gap: 3 });
   canvas.text(
     `${report.requestedUrl}  ·  ${formatDate(report.generatedAt)}  ·  ${report.pagesAnalyzed} pagine analizzate`,
     { size: 9, color: COLOR.inkSoft, gap: 10 }
@@ -70,7 +71,8 @@ export async function generateFreeReportPdf(report: DigitalCheckReport): Promise
   const gaugeCy = heroTop - gaugeRadius - 6;
   canvas.scoreGauge({ cx: gaugeCx, cy: gaugeCy, radius: gaugeRadius, thickness: 8, score: report.overallScore, scoreSize: 26 });
   const gaugeLabelY = gaugeCy - gaugeRadius - 15;
-  const label = STATUS_LABEL[scoreToStatus(report.overallScore)];
+  const status = scoreToStatus(report.overallScore);
+  const label = STATUS_LABEL[status];
   const labelWidth = canvas.fontBold.widthOfTextAtSize(label, 11);
   canvas.page.drawText(label, {
     x: gaugeCx - labelWidth / 2,
@@ -107,8 +109,12 @@ export async function generateFreeReportPdf(report: DigitalCheckReport): Promise
   const rowGap = 8;
   const gridTop = canvas.y;
 
-  const cards: { label: string; score: number }[] = report.analyses.map((a) => ({ label: CATEGORY_LABELS[a.category], score: a.score }));
-  if (report.geo) cards.push({ label: "GEO", score: report.geo.overallScore });
+  const cards: { key: CategoryKey | "geo"; label: string; score: number }[] = report.analyses.map((a) => ({
+    key: a.category,
+    label: CATEGORY_LABELS[a.category],
+    score: a.score,
+  }));
+  if (report.geo) cards.push({ key: "geo", label: "GEO", score: report.geo.overallScore });
 
   cards.forEach((c, i) => {
     const col = i % cols;
@@ -148,215 +154,325 @@ export async function generateFreeReportPdf(report: DigitalCheckReport): Promise
 }
 
 // ---------------------------------------------------------------------
-// PDF Pro — il vero audit professionale (brief audit sezioni 3/17/39):
-// metodologia, sottopunteggi, findings, gravita', impatto, raccomandazioni,
-// cross-analysis e action plan per tutte le 8 categorie. Lunghezza
-// dinamica: cresce in base ai dati realmente disponibili (brief sezione 38).
+// PDF Pro — il vero audit professionale (brief redesign PDF): un report
+// che comunica autorevolezza, precisione e valore consulenziale, non
+// un'esportazione grezza dei dati di scansione. Lunghezza dinamica: cresce
+// in base ai dati realmente disponibili.
 // ---------------------------------------------------------------------
 export async function generateProReportPdf(report: DigitalCheckReport): Promise<Uint8Array> {
   const canvas = await PdfCanvas.create();
 
-  drawCoverAndExecutiveSummary(canvas, report);
+  drawCover(canvas, report);
+  // Dalla copertina (senza chrome) in poi, ogni capitolo riserva da solo lo
+  // spazio che gli serve (sectionTitle/drawCategoryHeader/
+  // drawGeoOverviewPage) e continua sulla pagina precedente quando c'e'
+  // posto, invece di aprirne sempre una nuova: elimina le pagine quasi
+  // vuote che si formavano quando un capitolo superava di poco la pagina
+  // precedente (redesign PDF, sezione 25). Un solo newPage esplicito serve
+  // per passare dalla copertina (chrome=false) al corpo del report.
   canvas.newPage(true);
+  drawExecutiveSummary(canvas, report);
   drawScorecardPage(canvas, report);
 
   for (const analysis of report.analyses) {
-    canvas.newPage(true);
     drawCategoryReportPage(canvas, analysis);
   }
 
-  // GEO — pagine dedicate gia' esistenti (brief GEO sezione 22), riusate
-  // senza modifiche: solo se lo scan ha effettivamente prodotto un'analisi
-  // GEO (scan storici precedenti al modulo GEO non ne hanno una).
+  // GEO — pagine dedicate gia' esistenti (brief GEO sezione 22), solo se lo
+  // scan ha effettivamente prodotto un'analisi GEO.
   if (report.geo) {
-    canvas.newPage(true);
     drawGeoOverviewPage(canvas, report.geo);
-    canvas.newPage(true);
     drawGeoIssuesPage(canvas, report.geo);
   }
 
-  canvas.newPage(true);
   drawCrossAnalysisPage(canvas, report.crossAnalysis);
-
-  canvas.newPage(true);
   drawActionPlanPage(canvas, report.actionPlan);
-
-  canvas.newPage(true);
   drawAiReportPage(canvas, report);
+  drawFinalPage(canvas, report);
 
-  canvas.stampChrome("DigitalCheck - powered by Imperium Digital", "DigitalCheck - Professional Website Audit");
+  canvas.stampChrome("DigitalCheck · powered by Imperium Digital", "DigitalCheck — Professional Website Audit");
 
   return canvas.save();
 }
 
-// ---- PAGINA 1: Cover + Executive Summary --------------------------------
-function drawCoverAndExecutiveSummary(canvas: PdfCanvas, report: DigitalCheckReport) {
-  canvas.y -= 8;
-  canvas.text("DigitalCheck", { size: 30, font: "display", color: COLOR.accent, gap: 2 });
-  canvas.text("powered by Imperium Digital", { size: 9.5, color: COLOR.inkSoft, gap: 26 });
-  canvas.text("Professional Website Audit", { size: 18, font: "display", color: COLOR.ink, gap: 10 });
-  canvas.text(report.requestedUrl, { size: 12.5, font: "bold", color: COLOR.ink, gap: 3 });
+// ---- PAGINA 1: Copertina (redesign PDF, sezione 3) -----------------------
+// Nessun chrome (header/footer/numero pagina): la copertina resta a filo
+// margine, come la prima pagina di un vero report di consulenza.
+function drawCover(canvas: PdfCanvas, report: DigitalCheckReport) {
+  canvas.y -= 30;
+  canvas.text("DigitalCheck", { size: 34, font: "display", color: COLOR.accent, align: "center", gap: 3 });
+  canvas.text("powered by Imperium Digital", { size: 9.5, color: COLOR.inkSoft, align: "center", gap: 40 });
+
+  canvas.text("PROFESSIONAL WEBSITE AUDIT", { size: 11, font: "bold", color: COLOR.ink, align: "center", gap: 26 });
+
+  canvas.text(report.requestedUrl, { size: 15, font: "bold", color: COLOR.ink, align: "center", gap: 6 });
   canvas.text(`${formatDate(report.generatedAt)}  ·  ${report.pagesAnalyzed} pagine analizzate`, {
     size: 9.5,
     color: COLOR.inkSoft,
-    gap: 32,
+    align: "center",
+    gap: 60,
   });
 
-  // Score hero
-  const heroTop = canvas.y;
-  const gaugeRadius = 58;
-  const gaugeCx = MARGIN + gaugeRadius + 6;
-  const gaugeCy = heroTop - gaugeRadius - 6;
-  canvas.scoreGauge({ cx: gaugeCx, cy: gaugeCy, radius: gaugeRadius, thickness: 11, score: report.overallScore, scoreSize: 36 });
-  const label = STATUS_LABEL[scoreToStatus(report.overallScore)];
-  const labelSize = 13;
+  // Score hero, grande e centrato.
+  const gaugeRadius = 92;
+  const gaugeCx = PAGE_WIDTH / 2;
+  const gaugeCy = canvas.y - gaugeRadius;
+  canvas.scoreGauge({ cx: gaugeCx, cy: gaugeCy, radius: gaugeRadius, thickness: 14, score: report.overallScore, scoreSize: 56 });
+
+  const status = scoreToStatus(report.overallScore);
+  const label = STATUS_LABEL[status];
+  const labelSize = 15;
   const labelWidth = canvas.fontBold.widthOfTextAtSize(label, labelSize);
   canvas.page.drawText(label, {
     x: gaugeCx - labelWidth / 2,
-    y: gaugeCy - gaugeRadius - 20,
+    y: gaugeCy - gaugeRadius - 26,
     size: labelSize,
     font: canvas.fontBold,
     color: scoreColor(report.overallScore),
   });
 
-  const asideX = gaugeCx + gaugeRadius + 28;
-  const asideWidth = PAGE_WIDTH - MARGIN - asideX;
-  canvas.y = heroTop - 6;
-  canvas.text(
-    "Il DigitalCheck Score riassume SEO, Performance, Mobile, Conversione, Contenuti, Accessibilita', Tecnica e GEO calcolati sui dati raccolti durante l'analisi (metodologia dettagliata nelle pagine seguenti).",
-    { size: 9.5, color: COLOR.inkSoft, x: asideX, maxWidth: asideWidth, maxLines: 5, gap: 0 }
+  canvas.y = gaugeCy - gaugeRadius - 50;
+  canvas.text(SCORE_MEANING[status], { size: 10.5, color: COLOR.inkSoft, align: "center", maxWidth: 360, x: (PAGE_WIDTH - 360) / 2, maxLines: 2, lineHeightMult: 1.45, gap: 0 });
+
+  // Chiusura minimale della copertina: nessun testo aggiuntivo (brief
+  // sezione 3: "non utilizzare troppo testo").
+  canvas.y = MARGIN + 26;
+  const closing = canvas.fitOneLine(
+    "Audit tecnico e consulenziale — SEO · Performance · Mobile · Contenuti · Conversione · Accessibilita' · Tecnica · GEO",
+    canvas.fontRegular,
+    7.5,
+    CONTENT_WIDTH
+  );
+  const closingWidth = canvas.fontRegular.widthOfTextAtSize(closing, 7.5);
+  canvas.page.drawText(closing, {
+    x: (PAGE_WIDTH - closingWidth) / 2,
+    y: canvas.y,
+    size: 7.5,
+    font: canvas.fontRegular,
+    color: COLOR.inkSoft,
+  });
+}
+
+// ---- PAGINA 2: Executive Summary (redesign PDF, sezione 4) ---------------
+function drawExecutiveSummary(canvas: PdfCanvas, report: DigitalCheckReport) {
+  canvas.sectionTitle("Executive Summary", { subtitle: "Il risultato dell'audit, in sintesi." });
+
+  // Ribbon compatto con il punteggio (gia' mostrato in copertina in grande:
+  // qui resta solo come riferimento rapido, brief sezione 22 — mai
+  // ripetuto identico, qui e' un promemoria minimale prima della sintesi
+  // vera e propria).
+  const ribbonHeight = 46;
+  const ribbonTop = canvas.y;
+  canvas.roundedRect(MARGIN, ribbonTop - ribbonHeight, CONTENT_WIDTH, ribbonHeight, { radius: 10, fill: COLOR.accentSoft });
+  canvas.y = ribbonTop - 16;
+  const scoreLabelText = `DigitalCheck Score: ${report.overallScore}/100 — ${STATUS_LABEL[scoreToStatus(report.overallScore)]}`;
+  canvas.page.drawText(scoreLabelText, { x: MARGIN + 16, y: canvas.y - 10, size: 11.5, font: canvas.fontBold, color: COLOR.accentDeep });
+  canvas.y = ribbonTop - ribbonHeight + 12;
+
+  canvas.y = ribbonTop - ribbonHeight - 16;
+  canvas.text(report.businessImpactSummary, { size: 10, color: COLOR.inkSoft, maxLines: 5, lineHeightMult: 1.4, gap: 16 });
+  canvas.divider();
+
+  // ---- KEY STRENGTHS / KEY ISSUES: due blocchi visivamente distinti ------
+  const colWidth = (CONTENT_WIDTH - 24) / 2;
+  const colTop = canvas.y;
+  const strengths = report.strengths.slice(0, 4);
+  const issues = Array.from(new Map(report.actionPlan.slice(0, 8).map((i) => [i.title, i])).values()).slice(0, 5);
+
+  const blockHeight = Math.max(keyBlockHeight(strengths.length), keyBlockHeight(issues.length));
+  canvas.ensureSpace(blockHeight + 16);
+
+  drawKeyBlock(canvas, "KEY STRENGTHS", COLOR.accent, COLOR.accentSoft, MARGIN, colTop, colWidth, blockHeight, strengths, "+", COLOR.accent);
+  drawKeyBlock(
+    canvas,
+    "KEY ISSUES",
+    COLOR.ink,
+    COLOR.paper,
+    MARGIN + colWidth + 24,
+    colTop,
+    colWidth,
+    blockHeight,
+    issues.map((i) => i.title),
+    "!",
+    scoreColor(30)
   );
 
-  canvas.y = Math.min(canvas.y, gaugeCy - gaugeRadius - 20 - 18);
+  canvas.y = colTop - blockHeight - 18;
+  canvas.divider();
+
+  // ---- PRIORITY ACTIONS: card numerate a piena larghezza -------------------
+  const priorities = report.recommendedActions.slice(0, 5);
+  if (priorities.length > 0) {
+    canvas.kicker("Priority Actions");
+    priorities.forEach((p, i) => {
+      const cardH = canvas.measure(p, { size: 9.5, maxWidth: CONTENT_WIDTH - 44, lineHeightMult: 1.35, gap: 0, maxLines: 2 }) + 16;
+      canvas.ensureSpace(cardH + 8);
+      const top = canvas.y;
+      canvas.roundedRect(MARGIN, top - cardH, CONTENT_WIDTH, cardH, { radius: 8, fill: COLOR.white, border: COLOR.line, borderWidth: 0.75 });
+      const badgeSize = 20;
+      canvas.roundedRect(MARGIN + 10, top - 8 - badgeSize, badgeSize, badgeSize, { radius: 5, fill: COLOR.accent });
+      const numLabel = String(i + 1);
+      const numWidth = canvas.fontBold.widthOfTextAtSize(numLabel, 10);
+      canvas.page.drawText(numLabel, { x: MARGIN + 10 + (badgeSize - numWidth) / 2, y: top - 8 - badgeSize / 2 - 3.5, size: 10, font: canvas.fontBold, color: COLOR.white });
+      canvas.text(p, { size: 9.5, color: COLOR.ink, x: MARGIN + 10 + badgeSize + 12, maxWidth: CONTENT_WIDTH - 44 - badgeSize, maxLines: 2, gap: 0, lineHeightMult: 1.35 });
+      canvas.y = top - cardH - 8;
+    });
+  }
+}
+
+function keyBlockHeight(itemCount: number): number {
+  const headerH = 34;
+  const padding = 12;
+  const itemH = 26; // stima media per riga di bullet
+  const emptyH = itemCount === 0 ? 20 : 0;
+  return headerH + padding * 2 + itemCount * itemH + emptyH;
+}
+
+function drawKeyBlock(
+  canvas: PdfCanvas,
+  kicker: string,
+  accentColor: Color,
+  headerFill: Color,
+  x: number,
+  top: number,
+  width: number,
+  height: number,
+  items: string[],
+  glyph: string,
+  glyphColor: Color
+) {
+  canvas.roundedRect(x, top - height, width, height, { radius: 10, fill: COLOR.white, border: COLOR.line, borderWidth: 0.75 });
+  canvas.roundedRect(x, top - 30, width, 30, { radius: 10, fill: headerFill });
+  // Angoli inferiori dell'header quadrati (l'header e' solo la fascia
+  // superiore): sovrapponi un rettangolo netto sotto per tagliare
+  // l'arrotondamento residuo.
+  canvas.page.drawRectangle({ x, y: top - 30, width, height: 8, color: headerFill });
+  canvas.page.drawText(kicker, { x: x + 14, y: top - 20, size: 9.5, font: canvas.fontBold, color: accentColor });
+
+  const savedY = canvas.y;
+  canvas.y = top - 30 - 14;
+  if (items.length === 0) {
+    canvas.text("Nessun elemento rilevante segnalato dall'analisi.", { size: 8.5, color: COLOR.inkSoft, x: x + 14, maxWidth: width - 28, gap: 0 });
+  } else {
+    for (const item of items) {
+      canvas.hangingLine(glyph, item, { size: 9, x: x + 14, maxWidth: width - 28, glyphColor, gap: 6, maxLines: 2, lineHeightMult: 1.3 });
+    }
+  }
+  canvas.y = savedY;
+}
+
+// ---- PAGINA 3: Scorecard, griglia 2x4 (redesign PDF, sezione 5) ---------
+function drawScorecardPage(canvas: PdfCanvas, report: DigitalCheckReport) {
+  canvas.sectionTitle("Scorecard", { subtitle: "Le 8 categorie a colpo d'occhio, per un confronto immediato." });
+
+  const cards: { key: CategoryKey | "geo"; label: string; score: number; interpretation: string; verified: boolean }[] =
+    report.analyses.map((a) => ({
+      key: a.category,
+      label: CATEGORY_LABELS[a.category],
+      score: a.score,
+      interpretation: a.shortSummary,
+      verified: a.dataAvailability === "verified",
+    }));
+  if (report.geo) {
+    cards.push({
+      key: "geo",
+      label: "GEO",
+      score: report.geo.overallScore,
+      interpretation: report.geoShortSummary ?? "Predisposizione del sito a essere compreso da motori di ricerca generativi e AI answer engine.",
+      verified: true,
+    });
+  }
+
+  const cols = 2;
+  const gutter = 16;
+  const cardWidth = (CONTENT_WIDTH - gutter * (cols - 1)) / cols;
+  const cardHeight = 108;
+  const rowGap = 14;
+
+  for (let i = 0; i < cards.length; i += cols) {
+    const rowCards = cards.slice(i, i + cols);
+    canvas.ensureSpace(cardHeight + rowGap);
+    const rowTop = canvas.y;
+    rowCards.forEach((c, colIdx) => {
+      const x = MARGIN + colIdx * (cardWidth + gutter);
+      drawScorecardGridCard(canvas, x, rowTop, cardWidth, cardHeight, c);
+    });
+    canvas.y = rowTop - cardHeight - rowGap;
+  }
+}
+
+function drawScorecardGridCard(
+  canvas: PdfCanvas,
+  x: number,
+  top: number,
+  width: number,
+  height: number,
+  card: { key: CategoryKey | "geo"; label: string; score: number; interpretation: string; verified: boolean }
+) {
+  canvas.roundedRect(x, top - height, width, height, { radius: 10, fill: COLOR.white, border: COLOR.line, borderWidth: 0.75 });
+
+  const pad = 14;
+  canvas.monogramBadge(x + pad, top - pad, CATEGORY_MONOGRAM[card.key], { size: 26 });
+  canvas.page.drawText(card.label, { x: x + pad + 34, y: top - pad - 12, size: 11, font: canvas.fontBold, color: COLOR.ink });
+  const statusLbl = STATUS_LABEL[scoreToStatus(card.score)];
+  canvas.page.drawText(statusLbl, { x: x + pad + 34, y: top - pad - 25, size: 8, font: canvas.fontBold, color: scoreColor(card.score) });
+
+  const scoreText = String(card.score);
+  const scoreSize = 22;
+  const scoreWidth = canvas.fontDisplay.widthOfTextAtSize(scoreText, scoreSize);
+  canvas.page.drawText(scoreText, { x: x + width - pad - scoreWidth - 22, y: top - pad - 18, size: scoreSize, font: canvas.fontDisplay, color: scoreColor(card.score) });
+  canvas.page.drawText("/100", { x: x + width - pad - 20, y: top - pad - 13, size: 7.5, font: canvas.fontRegular, color: COLOR.inkSoft });
+
+  const textTop = top - pad - 34 - 12;
+  const savedY = canvas.y;
+  canvas.y = textTop;
+  canvas.text(card.interpretation, { size: 8.5, color: COLOR.inkSoft, x: x + pad, maxWidth: width - pad * 2, maxLines: 3, gap: 0, lineHeightMult: 1.3 });
+  if (!card.verified) {
+    canvas.page.drawText("Dato parziale o stimato", { x: x + pad, y: top - height + 10, size: 7, font: canvas.fontRegular, color: COLOR.inkSoft });
+  }
+  canvas.y = savedY;
+}
+
+// ---- Ultima pagina: chiusura del report (redesign PDF, sezione 21) -------
+function drawFinalPage(canvas: PdfCanvas, report: DigitalCheckReport) {
+  canvas.sectionTitle("Final Assessment");
+
+  canvas.kicker("Final DigitalCheck Score");
+  const gaugeRadius = 46;
+  const gaugeCx = MARGIN + gaugeRadius + 4;
+  const gaugeCy = canvas.y - gaugeRadius - 4;
+  canvas.scoreGauge({ cx: gaugeCx, cy: gaugeCy, radius: gaugeRadius, thickness: 9, score: report.overallScore, scoreSize: 26 });
+  const status = scoreToStatus(report.overallScore);
+  const label = STATUS_LABEL[status];
+  const labelWidth = canvas.fontBold.widthOfTextAtSize(label, 11);
+  canvas.page.drawText(label, { x: gaugeCx - labelWidth / 2, y: gaugeCy - gaugeRadius - 16, size: 11, font: canvas.fontBold, color: scoreColor(report.overallScore) });
+
+  const asideX = gaugeCx + gaugeRadius + 26;
+  const asideWidth = PAGE_WIDTH - MARGIN - asideX;
+  const savedY = canvas.y;
+  canvas.y = savedY - 4;
+  const closingText =
+    (report.aiInsights?.finalAssessment && report.aiInsights.finalAssessment.length > 0
+      ? report.aiInsights.finalAssessment
+      : null) ?? SCORE_MEANING[status];
+  canvas.text(closingText, { size: 9.5, color: COLOR.inkSoft, x: asideX, maxWidth: asideWidth, maxLines: 6, gap: 0, lineHeightMult: 1.4 });
+
+  canvas.y = Math.min(canvas.y, gaugeCy - gaugeRadius - 16 - 16);
   canvas.y -= 20;
   canvas.divider();
 
-  // Executive summary (interpretazione AI dell'intero audit, sezione
-  // riservata al PDF Pro dove e' consentito parlare di problemi/priorita' —
-  // brief sezione 17).
-  canvas.sectionTitle("Executive Summary");
-  canvas.text(report.businessImpactSummary, { size: 10.5, color: COLOR.inkSoft, gap: 16, maxLines: 7 });
-
-  const colWidth = (CONTENT_WIDTH - 28) / 2;
-  const colTop = canvas.y;
-  const strengths = report.strengths.slice(0, 4);
-  const weaknesses = report.actionPlan.slice(0, 4);
-
-  canvas.y = colTop;
-  canvas.text("Principali aree di forza", { size: 11, font: "bold", color: COLOR.ink, gap: 6, maxWidth: colWidth });
-  if (strengths.length > 0) {
-    for (const s of strengths) canvas.hangingLine("+", s, { size: 9.5, maxWidth: colWidth, glyphColor: COLOR.accent, maxLines: 2, gap: 4 });
-  } else {
-    canvas.text("Nessun punto di forza specifico segnalato dall'analisi.", { size: 9, color: COLOR.inkSoft, maxWidth: colWidth });
-  }
-  const leftBottom = canvas.y;
-
-  canvas.y = colTop;
-  canvas.text("Aree che richiedono attenzione", { size: 11, font: "bold", color: COLOR.ink, gap: 6, maxWidth: colWidth, x: MARGIN + colWidth + 28 });
-  if (weaknesses.length > 0) {
-    for (const w of weaknesses)
-      canvas.hangingLine("!", w.title, { size: 9.5, maxWidth: colWidth, x: MARGIN + colWidth + 28, glyphColor: COLOR.ink, maxLines: 2, gap: 4 });
-  } else {
-    canvas.text("Nessuna criticita' rilevante individuata.", { size: 9, color: COLOR.inkSoft, maxWidth: colWidth, x: MARGIN + colWidth + 28 });
-  }
-  const rightBottom = canvas.y;
-
-  canvas.y = Math.min(leftBottom, rightBottom) - 10;
-  canvas.divider();
-
-  const priorities = report.recommendedActions.slice(0, 3);
-  if (priorities.length > 0) {
-    canvas.text("Priorita' strategiche", { size: 11, font: "bold", color: COLOR.ink, gap: 6 });
-    priorities.forEach((p, i) => canvas.hangingLine(`${i + 1}.`, p, { size: 9.5, color: COLOR.inkSoft, gap: 4, maxLines: 2 }));
-  }
-}
-
-// ---- PAGINA 2: Scorecard (8 categorie a colpo d'occhio) -----------------
-function drawScorecardPage(canvas: PdfCanvas, report: DigitalCheckReport) {
-  canvas.sectionTitle("Scorecard", { subtitle: "Il punteggio di ogni categoria misurata, con una breve spiegazione del metodo." });
-
-  for (const a of report.analyses) {
-    const note = a.notes ?? CATEGORY_METHOD_NOTE[a.category];
-    drawScorecardRow(canvas, CATEGORY_LABELS[a.category], a.score, note, a.dataAvailability !== "verified");
-  }
-  if (report.geo) {
-    drawScorecardRow(
-      canvas,
-      "GEO — Generative Engine Optimization",
-      report.geo.overallScore,
-      "Predisposizione del sito a essere compreso da motori di ricerca generativi e AI answer engine.",
-      false
-    );
-  }
-}
-
-function drawScorecardRow(canvas: PdfCanvas, label: string, score: number, note: string, isEstimate: boolean) {
-  // +14pt quando c'e' anche la didascalia "dato parziale/stimato": senza,
-  // una nota di 2 righe piene si sovrapponeva alla didascalia sottostante
-  // (bug reale trovato via rendering reale del PDF, non solo a occhio sul codice).
-  const rowHeight = isEstimate ? 76 : 62;
-  canvas.ensureSpace(rowHeight + 10);
-  const top = canvas.y;
-  canvas.roundedRect(MARGIN, top - rowHeight, CONTENT_WIDTH, rowHeight, { radius: 10, fill: COLOR.white, border: COLOR.line, borderWidth: 0.75 });
-
-  const gaugeR = 22;
-  const gaugeCx = MARGIN + 34;
-  const gaugeCy = top - rowHeight / 2;
-  canvas.scoreGauge({ cx: gaugeCx, cy: gaugeCy, radius: gaugeR, thickness: 6, score, scoreSize: 15 });
-
-  const textX = MARGIN + 34 + gaugeR + 22;
-  const textWidth = CONTENT_WIDTH - (textX - MARGIN) - 16;
-  canvas.y = top - 16;
-  canvas.page.drawText(label, { x: textX, y: canvas.y - 11, size: 12, font: canvas.fontBold, color: COLOR.ink });
-  const clsLabel = STATUS_LABEL[scoreToStatus(score)];
-  const clsWidth = canvas.fontBold.widthOfTextAtSize(clsLabel, 9);
-  canvas.page.drawText(clsLabel, { x: MARGIN + CONTENT_WIDTH - 16 - clsWidth, y: canvas.y - 11, size: 9, font: canvas.fontBold, color: scoreColor(score) });
-  canvas.y = top - 32;
-  canvas.text(note, { size: 8.5, color: COLOR.inkSoft, x: textX, maxWidth: textWidth, maxLines: 2, gap: 0, lineHeightMult: 1.3 });
-  if (isEstimate) {
-    canvas.page.drawText("Dato parziale o stimato, non una misura diretta", { x: textX, y: top - rowHeight + 8, size: 7.5, font: canvas.fontRegular, color: COLOR.inkSoft });
-  }
-
-  canvas.y = top - rowHeight - 12;
-}
-
-// ---- Ultima pagina: AI Report --------------------------------------------
-function drawAiReportPage(canvas: PdfCanvas, report: DigitalCheckReport) {
-  canvas.sectionTitle("AI Report", { subtitle: "Interpretazione dei dati raccolti durante l'analisi, basata solo sui risultati calcolati sopra." });
-
-  if (report.strengths.length > 0) {
-    canvas.text("Punti di forza principali", { size: 12, font: "bold", color: COLOR.ink, gap: 6 });
-    for (const s of report.strengths) canvas.hangingLine("+", s, { size: 9.5, glyphColor: COLOR.accent, gap: 4, maxLines: 2 });
-    canvas.y -= 6;
-  }
-
-  const weaknessTitles = Array.from(new Set(report.actionPlan.slice(0, 6).map((i) => i.title)));
-  if (weaknessTitles.length > 0) {
-    canvas.divider();
-    canvas.text("Aree principali da migliorare", { size: 12, font: "bold", color: COLOR.ink, gap: 6 });
-    for (const w of weaknessTitles) canvas.hangingLine("!", w, { size: 9.5, gap: 4, maxLines: 2 });
-    canvas.y -= 6;
-  }
-
-  if (report.recommendedActions.length > 0) {
-    canvas.divider();
-    canvas.text("Raccomandazioni strategiche", { size: 12, font: "bold", color: COLOR.ink, gap: 6 });
-    report.recommendedActions.forEach((r, i) => canvas.hangingLine(`${i + 1}.`, r, { size: 10, color: COLOR.ink, gap: 5, maxLines: 2 }));
-    canvas.y -= 6;
-  }
-
-  if (report.unverifiable.length > 0) {
-    canvas.divider();
-    canvas.text("Cosa non e' stato possibile verificare automaticamente", { size: 10.5, font: "bold", color: COLOR.ink, gap: 6 });
-    for (const u of report.unverifiable) canvas.hangingLine("•", u, { size: 8.5, color: COLOR.inkSoft, gap: 3, maxLines: 2 });
+  const nextSteps = report.recommendedActions.slice(0, 5);
+  if (nextSteps.length > 0) {
+    canvas.kicker("What To Do Next");
+    nextSteps.forEach((p, i) => canvas.hangingLine(`${i + 1}.`, p, { size: 10, color: COLOR.ink, gap: 6, maxLines: 2, lineHeightMult: 1.35 }));
     canvas.y -= 8;
   }
 
   canvas.divider();
-  canvas.text("Conclusione", { size: 11, font: "bold", color: COLOR.ink, gap: 6 });
-  canvas.text(
-    `Sulla base dei dati raccolti, ${report.requestedUrl} ottiene un DigitalCheck Score di ${report.overallScore}/100 (${STATUS_LABEL[scoreToStatus(report.overallScore)]}). Il piano d'azione (pagina precedente) ordina gli interventi consigliati per impatto e gravita': affrontarli in quest'ordine massimizza l'effetto rispetto allo sforzo richiesto.`,
-    { size: 9.5, color: COLOR.inkSoft, maxLines: 4 }
+  canvas.calloutBox(
+    "Un ultimo promemoria",
+    "Questo report combina controlli tecnici automatici e, dove disponibile, un'interpretazione AI dei risultati: rappresenta lo stato del sito al momento dell'analisi, non una certificazione permanente. Ripetere l'analisi periodicamente permette di misurare i progressi.",
+    { maxLines: 3 }
   );
 }
 

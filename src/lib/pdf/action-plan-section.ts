@@ -10,16 +10,23 @@ function categoryLabel(category: CategoryKey | "geo"): string {
   return CATEGORY_LABELS[category];
 }
 
-// DigitalCheck Priority Action Plan (brief audit sezione 27): ordinato per
-// gravita' gia' assegnata dai motori di categoria (src/lib/analysis/
-// action-plan.ts) — mai un ordine deciso qui.
+// DigitalCheck Priority Action Plan (brief audit sezione 18/27): ordinato
+// per gravita' gia' assegnata dai motori di categoria (src/lib/analysis/
+// action-plan.ts) — mai un ordine deciso qui. Struttura per card:
+// Priorita'/Categoria/Gravita'/Problema/Perche'/Azione/Impatto atteso.
+// Niente campo "Effort": non e' deducibile in modo affidabile dai dati
+// disponibili, quindi non va inventato (brief, sezione 18).
 export function drawActionPlanPage(canvas: PdfCanvas, items: ActionPlanItem[]) {
   canvas.sectionTitle("DigitalCheck Priority Action Plan", {
     subtitle: "Gli interventi consigliati su tutte le categorie, in ordine di priorita'.",
   });
 
   if (items.length === 0) {
-    canvas.text("Non sono state rilevate azioni prioritarie in questa analisi.", { size: 10.5, color: COLOR.inkSoft });
+    canvas.calloutBox(
+      "Nessuna azione prioritaria",
+      "Non sono state rilevate azioni prioritarie in questa analisi: i punteggi delle categorie non evidenziano criticita' che richiedano un intervento immediato.",
+      { maxLines: 2 }
+    );
     return;
   }
 
@@ -29,10 +36,13 @@ export function drawActionPlanPage(canvas: PdfCanvas, items: ActionPlanItem[]) {
     const innerX = MARGIN + padding + badgeW;
     const innerWidth = CONTENT_WIDTH - padding * 2 - badgeW;
     const titleH = 14;
-    const metaH = 12;
-    const whyH = canvas.measure(item.why, { size: 8.5, maxWidth: innerWidth, lineHeightMult: 1.3, gap: 4 });
-    const actionH = canvas.measure(item.action, { size: 8.5, maxWidth: innerWidth, lineHeightMult: 1.3, gap: 0 });
-    const cardHeight = padding * 2 + titleH + 4 + metaH + 6 + whyH + actionH;
+    const metaH = 26;
+    const whyH = canvas.measure(`Perche' intervenire: ${item.why}`, { size: 8.5, maxWidth: innerWidth - 8, lineHeightMult: 1.3, gap: 4 });
+    const actionH = canvas.measure(`Azione consigliata: ${item.action}`, { size: 8.5, maxWidth: innerWidth - 8, lineHeightMult: 1.3, gap: item.impact ? 4 : 0 });
+    const impactH = item.impact
+      ? canvas.measure(`Impatto atteso: ${item.impact}`, { size: 8.5, maxWidth: innerWidth - 8, lineHeightMult: 1.3, gap: 0 })
+      : 0;
+    const cardHeight = padding * 2 + titleH + 4 + metaH + 6 + whyH + actionH + impactH;
 
     canvas.ensureSpace(cardHeight + 8);
     const top = canvas.y;
@@ -52,12 +62,28 @@ export function drawActionPlanPage(canvas: PdfCanvas, items: ActionPlanItem[]) {
     });
 
     canvas.y = top - padding - titleH - 2;
-    const meta = `Categoria: ${categoryLabel(item.category)}  ·  Gravita': ${SEVERITY_LABEL[item.severity]}`;
-    canvas.page.drawText(meta, { x: innerX + 8, y: canvas.y - 8, size: 8.5, font: canvas.fontRegular, color: COLOR.inkSoft });
-    canvas.y -= metaH + 4;
+    const sevBadgeW = canvas.severityBadge(innerX + 8, canvas.y, SEVERITY_LABEL[item.severity], SEVERITY5_COLOR[item.severity]);
+    canvas.page.drawText(`Categoria: ${categoryLabel(item.category)}`, {
+      x: innerX + 8 + sevBadgeW + 8,
+      y: canvas.y - 12,
+      size: 8.5,
+      font: canvas.fontRegular,
+      color: COLOR.inkSoft,
+    });
+    canvas.y -= metaH;
 
     canvas.text(`Perche' intervenire: ${item.why}`, { size: 8.5, color: COLOR.inkSoft, x: innerX + 8, maxWidth: innerWidth - 8, gap: 4, lineHeightMult: 1.3 });
-    canvas.text(`Azione consigliata: ${item.action}`, { size: 8.5, color: COLOR.ink, x: innerX + 8, maxWidth: innerWidth - 8, gap: 0, lineHeightMult: 1.3 });
+    canvas.text(`Azione consigliata: ${item.action}`, {
+      size: 8.5,
+      color: COLOR.ink,
+      x: innerX + 8,
+      maxWidth: innerWidth - 8,
+      gap: item.impact ? 4 : 0,
+      lineHeightMult: 1.3,
+    });
+    if (item.impact) {
+      canvas.text(`Impatto atteso: ${item.impact}`, { size: 8.5, color: COLOR.accent, x: innerX + 8, maxWidth: innerWidth - 8, gap: 0, lineHeightMult: 1.3 });
+    }
 
     canvas.y = top - cardHeight - 8;
   }

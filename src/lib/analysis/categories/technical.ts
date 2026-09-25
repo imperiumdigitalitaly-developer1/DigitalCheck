@@ -69,8 +69,11 @@ export function analyzeTechnical(facts: SeoFacts, crawl: CrawlResult): AnalysisR
   let securityHeadersScore = 0;
   const missingHeaders: string[] = [];
   const presentHeaders: string[] = [];
+  const securityHeadersDetail: { label: string; present: boolean }[] = [];
   for (const check of SECURITY_HEADER_CHECKS) {
-    if (headers[check.key]) {
+    const present = !!headers[check.key];
+    securityHeadersDetail.push({ label: check.label, present });
+    if (present) {
       securityHeadersScore += check.weight;
       presentHeaders.push(check.label);
     } else {
@@ -134,6 +137,7 @@ export function analyzeTechnical(facts: SeoFacts, crawl: CrawlResult): AnalysisR
       redirect_hops: redirectHops,
       security_headers_present: presentHeaders.length,
       security_headers_total: SECURITY_HEADER_CHECKS.length,
+      security_headers_detail: securityHeadersDetail,
       mixed_content_detected: mixedContentDetected,
       dom_elements_estimate: domNodeEstimate || null,
     },

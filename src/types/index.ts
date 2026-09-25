@@ -3,6 +3,22 @@ import type { AnalysisResult } from "@/lib/analysis/types";
 import type { CrossAnalysisInsight } from "@/lib/analysis/cross-analysis";
 import type { ActionPlanItem } from "@/lib/analysis/action-plan";
 
+// Interpretazione AI dell'intero audit, per la pagina "AI Report" del PDF
+// Pro (brief redesign PDF, sezione 19: Executive Interpretation / Main
+// Strengths / Main Weaknesses / Strategic Priorities / Quick Wins /
+// Strategic Improvements / Final Assessment). Tutti i campi derivano
+// esclusivamente da src/lib/ai/audit-analyzer.ts, che riceve solo i
+// risultati GIA' calcolati dalle 8 categorie — mai dati inventati.
+export interface AuditAiInsights {
+  executiveInterpretation: string;
+  mainStrengths: string[];
+  mainWeaknesses: string[];
+  strategicPriorities: string[];
+  quickWins: string[];
+  strategicImprovements: string[];
+  finalAssessment: string;
+}
+
 export type BusinessType =
   | "bnb"
   | "hotel"
@@ -159,6 +175,13 @@ export interface DigitalCheckReport {
   masterScoreWeights: Partial<Record<CategoryKey | "geo", number>>;
   crossAnalysis: CrossAnalysisInsight[];
   actionPlan: ActionPlanItem[];
+  // Interpretazione AI dell'intero audit (brief redesign PDF, sezione 19-20):
+  // segnale esplicito e affidabile per PDF/UI, invece di dedurlo da testo
+  // fallback — evita di mostrare contenuti AI "a meta'" quando l'AI e'
+  // fallita mid-parsing. false anche quando la generazione AI e' fallita
+  // per errore tecnico (mai propagato al cliente, resta nei log).
+  aiInsightsAvailable: boolean;
+  aiInsights: AuditAiInsights | null;
 
   // Presenti solo quando il report e' stato troncato per il piano Free
   // (vedi src/lib/billing/report-tiering.ts): permettono all'interfaccia

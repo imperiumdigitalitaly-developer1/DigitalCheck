@@ -72,6 +72,10 @@ export async function persistScanForSite(site: Site, owner: User): Promise<Persi
           aiPriorities: report.aiAnalysis?.priorities ?? [],
           auditExecutiveSummary: report.businessImpactSummary,
           auditCrossAnalysis: report.crossAnalysis as unknown as Prisma.InputJsonValue,
+          auditAiAvailable: report.aiInsightsAvailable,
+          auditQuickWins: report.aiInsights?.quickWins ?? [],
+          auditStrategicImprovements: report.aiInsights?.strategicImprovements ?? [],
+          auditFinalAssessment: report.aiInsights?.finalAssessment || null,
         },
       }),
       prisma.scanScore.createMany({
@@ -85,6 +89,8 @@ export async function persistScanForSite(site: Site, owner: User): Promise<Persi
           notes: a.notes,
           dataAvailability: a.dataAvailability,
           shortSummary: a.shortSummary,
+          metrics: a.metrics as unknown as Prisma.InputJsonValue,
+          strengths: a.strengths,
         })),
       }),
       prisma.scanIssue.createMany({
