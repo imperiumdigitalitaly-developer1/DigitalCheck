@@ -95,10 +95,14 @@ function drawCategoryHeader(canvas: PdfCanvas, result: AnalysisResult) {
   canvas.y -= 14;
   canvas.divider();
 
-  // Score + livello, riga compatta.
-  canvas.ensureSpace(30);
-  const rowTop = canvas.y;
+  // Score + livello, riga compatta. Il gauge (diametro 2*gaugeR) disegna
+  // direttamente sulla pagina senza passare da ensureSpace() come text():
+  // la riserva deve coprire l'intero diametro, non un valore arbitrario
+  // piu' piccolo, altrimenti il cerchio del punteggio puo' finire sotto la
+  // fascia footer (stessa causa del bug sulla pagina di valutazione finale).
   const gaugeR = 22;
+  canvas.ensureSpace(gaugeR * 2 + 8);
+  const rowTop = canvas.y;
   canvas.scoreGauge({ cx: MARGIN + gaugeR, cy: rowTop - gaugeR, radius: gaugeR, thickness: 6, score: result.score, scoreSize: 15 });
   const statusLabel = STATUS_LABEL[result.status];
   const statusX = MARGIN + gaugeR * 2 + 16;

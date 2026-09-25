@@ -437,6 +437,16 @@ function drawScorecardGridCard(
 
 // ---- Ultima pagina: chiusura del report (redesign PDF, sezione 21) -------
 function drawFinalPage(canvas: PdfCanvas, report: DigitalCheckReport) {
+  // Riserva lo spazio per l'intero blocco titolo + kicker + gauge + stato
+  // PRIMA di iniziare a disegnarlo: scoreGauge() disegna direttamente sulla
+  // pagina (drawEllipse/drawSvgPath) senza passare da ensureSpace() come
+  // text()/hangingLine(), quindi se il blocco parte troppo vicino al fondo
+  // pagina il cerchio del punteggio finisce sotto la fascia footer, dove
+  // stampChrome() disegna poi testo/numero pagina a coordinate fisse — da
+  // qui la sovrapposizione. Riservando tutto il blocco in un colpo solo
+  // (stesso pattern di drawGeoOverviewPage) si forza un'interruzione di
+  // pagina pulita PRIMA che inizi, mai a meta'.
+  canvas.ensureSpace(230);
   canvas.sectionTitle("Valutazione Finale");
 
   canvas.kicker("DigitalCheck Score Finale");
