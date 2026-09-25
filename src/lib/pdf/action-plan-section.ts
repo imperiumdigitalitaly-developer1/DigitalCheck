@@ -17,7 +17,7 @@ function categoryLabel(category: CategoryKey | "geo"): string {
 // Niente campo "Effort": non e' deducibile in modo affidabile dai dati
 // disponibili, quindi non va inventato (brief, sezione 18).
 export function drawActionPlanPage(canvas: PdfCanvas, items: ActionPlanItem[]) {
-  canvas.sectionTitle("DigitalCheck Priority Action Plan", {
+  canvas.sectionTitle("DigitalCheck — Piano d'Azione Prioritario", {
     subtitle: "Gli interventi consigliati su tutte le categorie, in ordine di priorita'.",
   });
 

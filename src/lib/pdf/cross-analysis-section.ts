@@ -20,7 +20,7 @@ function monogramsForInsight(insight: CrossAnalysisInsight): string[] {
 // Se non ce ne sono, uno stato onesto e compatto (calloutBox), mai una
 // pagina quasi vuota (brief, sezione 17).
 export function drawCrossAnalysisPage(canvas: PdfCanvas, insights: CrossAnalysisInsight[]) {
-  canvas.sectionTitle("Cross-Analysis", {
+  canvas.sectionTitle("Analisi Incrociata", {
     subtitle: "Correlazioni tra aree diverse del sito, individuate quando i dati le supportano.",
   });
 

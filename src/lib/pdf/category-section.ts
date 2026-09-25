@@ -182,13 +182,13 @@ function drawSecurityHeadersTable(canvas: PdfCanvas, result: AnalysisResult) {
   const detail = result.metrics.security_headers_detail;
   if (!Array.isArray(detail) || detail.length === 0) return;
 
-  const headingH = canvas.measure("Security Headers", { size: 11.5, font: "bold", gap: 6 });
+  const headingH = canvas.measure("Header di Sicurezza", { size: 11.5, font: "bold", gap: 6 });
   canvas.ensureSpace(headingH + 24);
-  canvas.kicker("Security Headers");
+  canvas.kicker("Header di Sicurezza");
   canvas.keyValueTable(
     detail.map((h) => ({
       label: h.label,
-      value: h.present ? "Presente" : "Missing",
+      value: h.present ? "Presente" : "Assente",
       valueColor: h.present ? COLOR.accentDeep : SEVERITY5_COLOR.medium,
       valueSoft: h.present ? COLOR.accentSoft : SEVERITY5_SOFT_COLOR.medium,
     }))

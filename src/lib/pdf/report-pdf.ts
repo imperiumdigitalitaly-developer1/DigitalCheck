@@ -58,7 +58,7 @@ export async function generateFreeReportPdf(report: DigitalCheckReport): Promise
     color: COLOR.accent,
   });
 
-  canvas.text("Professional Website Audit", { size: 14, font: "display", color: COLOR.ink, gap: 3 });
+  canvas.text("Audit Professionale del Sito Web", { size: 14, font: "display", color: COLOR.ink, gap: 3 });
   canvas.text(
     `${report.requestedUrl}  ·  ${formatDate(report.generatedAt)}  ·  ${report.pagesAnalyzed} pagine analizzate`,
     { size: 9, color: COLOR.inkSoft, gap: 10 }
@@ -147,7 +147,7 @@ export async function generateFreeReportPdf(report: DigitalCheckReport): Promise
     maxWidth: CONTENT_WIDTH - 40,
   });
   canvas.text(
-    "Con DigitalCheck Pro ottieni l'audit professionale completo: metodologia, sottopunteggi, problemi rilevati con gravita' e impatto, raccomandazioni, cross-analysis tra le categorie e un piano d'azione prioritizzato.",
+    "Con DigitalCheck Pro ottieni l'audit professionale completo: metodologia, sottopunteggi, problemi rilevati con gravita' e impatto, raccomandazioni, analisi incrociata tra le categorie e un piano d'azione prioritizzato.",
     { size: 9, color: COLOR.line, gap: 0, x: MARGIN + 20, maxWidth: CONTENT_WIDTH - 40, maxLines: 3 }
   );
 
@@ -191,7 +191,7 @@ export async function generateProReportPdf(report: DigitalCheckReport): Promise<
   drawAiReportPage(canvas, report);
   drawFinalPage(canvas, report);
 
-  canvas.stampChrome("DigitalCheck · powered by Imperium Digital", "DigitalCheck — Professional Website Audit");
+  canvas.stampChrome("DigitalCheck · powered by Imperium Digital", "DigitalCheck — Audit Professionale del Sito Web");
 
   return canvas.save();
 }
@@ -205,7 +205,7 @@ function drawCover(canvas: PdfCanvas, report: DigitalCheckReport) {
   canvas.y -= logoHeight + 14;
   canvas.text("powered by Imperium Digital", { size: 9.5, color: COLOR.inkSoft, align: "center", gap: 40 });
 
-  canvas.text("PROFESSIONAL WEBSITE AUDIT", { size: 11, font: "bold", color: COLOR.ink, align: "center", gap: 26 });
+  canvas.text("AUDIT PROFESSIONALE DEL SITO WEB", { size: 11, font: "bold", color: COLOR.ink, align: "center", gap: 26 });
 
   canvas.text(report.requestedUrl, { size: 15, font: "bold", color: COLOR.ink, align: "center", gap: 6 });
   canvas.text(`${formatDate(report.generatedAt)}  ·  ${report.pagesAnalyzed} pagine analizzate`, {
@@ -255,9 +255,9 @@ function drawCover(canvas: PdfCanvas, report: DigitalCheckReport) {
   });
 }
 
-// ---- PAGINA 2: Executive Summary (redesign PDF, sezione 4) ---------------
+// ---- PAGINA 2: Sintesi Esecutiva (redesign PDF, sezione 4) ---------------
 function drawExecutiveSummary(canvas: PdfCanvas, report: DigitalCheckReport) {
-  canvas.sectionTitle("Executive Summary", { subtitle: "Il risultato dell'audit, in sintesi." });
+  canvas.sectionTitle("Sintesi Esecutiva", { subtitle: "Il risultato dell'audit, in sintesi." });
 
   // Ribbon compatto con il punteggio (gia' mostrato in copertina in grande:
   // qui resta solo come riferimento rapido, brief sezione 22 — mai
@@ -284,10 +284,10 @@ function drawExecutiveSummary(canvas: PdfCanvas, report: DigitalCheckReport) {
   const blockHeight = Math.max(keyBlockHeight(strengths.length), keyBlockHeight(issues.length));
   canvas.ensureSpace(blockHeight + 16);
 
-  drawKeyBlock(canvas, "KEY STRENGTHS", COLOR.accent, COLOR.accentSoft, MARGIN, colTop, colWidth, blockHeight, strengths, "+", COLOR.accent);
+  drawKeyBlock(canvas, "PUNTI DI FORZA", COLOR.accent, COLOR.accentSoft, MARGIN, colTop, colWidth, blockHeight, strengths, "+", COLOR.accent);
   drawKeyBlock(
     canvas,
-    "KEY ISSUES",
+    "PROBLEMI PRINCIPALI",
     COLOR.ink,
     COLOR.paper,
     MARGIN + colWidth + 24,
@@ -305,7 +305,7 @@ function drawExecutiveSummary(canvas: PdfCanvas, report: DigitalCheckReport) {
   // ---- PRIORITY ACTIONS: card numerate a piena larghezza -------------------
   const priorities = report.recommendedActions.slice(0, 5);
   if (priorities.length > 0) {
-    canvas.kicker("Priority Actions");
+    canvas.kicker("Azioni Prioritarie");
     priorities.forEach((p, i) => {
       const cardH = canvas.measure(p, { size: 9.5, maxWidth: CONTENT_WIDTH - 44, lineHeightMult: 1.35, gap: 0, maxLines: 2 }) + 16;
       canvas.ensureSpace(cardH + 8);
@@ -365,7 +365,7 @@ function drawKeyBlock(
 
 // ---- PAGINA 3: Scorecard, griglia 2x4 (redesign PDF, sezione 5) ---------
 function drawScorecardPage(canvas: PdfCanvas, report: DigitalCheckReport) {
-  canvas.sectionTitle("Scorecard", { subtitle: "Le 8 categorie a colpo d'occhio, per un confronto immediato." });
+  canvas.sectionTitle("Quadro dei Punteggi", { subtitle: "Le 8 categorie a colpo d'occhio, per un confronto immediato." });
 
   const cards: { key: CategoryKey | "geo"; label: string; score: number; interpretation: string; verified: boolean }[] =
     report.analyses.map((a) => ({
@@ -437,9 +437,9 @@ function drawScorecardGridCard(
 
 // ---- Ultima pagina: chiusura del report (redesign PDF, sezione 21) -------
 function drawFinalPage(canvas: PdfCanvas, report: DigitalCheckReport) {
-  canvas.sectionTitle("Final Assessment");
+  canvas.sectionTitle("Valutazione Finale");
 
-  canvas.kicker("Final DigitalCheck Score");
+  canvas.kicker("DigitalCheck Score Finale");
   const gaugeRadius = 46;
   const gaugeCx = MARGIN + gaugeRadius + 4;
   const gaugeCy = canvas.y - gaugeRadius - 4;
@@ -465,7 +465,7 @@ function drawFinalPage(canvas: PdfCanvas, report: DigitalCheckReport) {
 
   const nextSteps = report.recommendedActions.slice(0, 5);
   if (nextSteps.length > 0) {
-    canvas.kicker("What To Do Next");
+    canvas.kicker("Prossimi Passi");
     nextSteps.forEach((p, i) => canvas.hangingLine(`${i + 1}.`, p, { size: 10, color: COLOR.ink, gap: 6, maxLines: 2, lineHeightMult: 1.35 }));
     canvas.y -= 8;
   }

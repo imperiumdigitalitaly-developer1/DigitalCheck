@@ -1,15 +1,15 @@
 import type { GeoCategoryKey, GeoIssueSeverity } from "./geo-types";
 
 export const GEO_CATEGORY_LABELS: Record<GeoCategoryKey, string> = {
-  ai_accessibility: "AI Accessibility",
-  semantic_understanding: "Semantic Understanding",
-  entity_clarity: "Entity Clarity",
-  information_completeness: "Information Completeness",
-  answerability: "Answerability",
-  content_structure: "Content Structure",
-  trust_signals: "Trust Signals",
-  structured_data: "Structured Data",
-  local_geo: "Local GEO",
+  ai_accessibility: "Accessibilita' AI",
+  semantic_understanding: "Chiarezza semantica",
+  entity_clarity: "Chiarezza dell'entita'",
+  information_completeness: "Completezza delle informazioni",
+  answerability: "Capacita' di risposta",
+  content_structure: "Struttura del contenuto",
+  trust_signals: "Segnali di fiducia",
+  structured_data: "Dati strutturati",
+  local_geo: "GEO locale",
 };
 
 export const GEO_SEVERITY_LABELS: Record<GeoIssueSeverity, { label: string; className: string }> = {
