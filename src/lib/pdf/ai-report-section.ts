@@ -24,7 +24,7 @@ export function drawAiReportPage(canvas: PdfCanvas, report: DigitalCheckReport) 
 
   if (!report.aiInsightsAvailable) {
     canvas.calloutBox(
-      "AI Analysis — Temporaneamente non disponibile",
+      "Analisi AI — Temporaneamente non disponibile",
       "Il sistema non ha potuto completare l'interpretazione AI durante questa scansione. I punteggi tecnici e le verifiche automatiche nelle pagine precedenti restano validi e disponibili.",
       { fill: COLOR.paper, kickerColor: COLOR.ink, maxLines: 2 }
     );
@@ -32,15 +32,15 @@ export function drawAiReportPage(canvas: PdfCanvas, report: DigitalCheckReport) 
   }
 
   const interpretation = report.aiInsights?.executiveInterpretation || report.businessImpactSummary;
-  canvas.kicker("Executive Interpretation");
+  canvas.kicker("Interpretazione Esecutiva");
   canvas.text(interpretation, { size: 9.5, color: COLOR.ink, maxLines: 5, lineHeightMult: 1.4, gap: 14 });
   canvas.divider();
 
   const strengths = report.aiInsights?.mainStrengths ?? report.strengths;
   if (strengths.length > 0) {
-    const headingH = canvas.measure("Main Strengths", { size: 11.5, font: "bold", gap: 6 });
+    const headingH = canvas.measure("Punti di Forza Principali", { size: 11.5, font: "bold", gap: 6 });
     canvas.ensureSpace(headingH + 16);
-    canvas.kicker("Main Strengths");
+    canvas.kicker("Punti di Forza Principali");
     for (const s of strengths) canvas.hangingLine("+", s, { size: 9.5, glyphColor: COLOR.accent, gap: 5, maxLines: 2, lineHeightMult: 1.3 });
     canvas.y -= 4;
   }
@@ -48,9 +48,9 @@ export function drawAiReportPage(canvas: PdfCanvas, report: DigitalCheckReport) 
   const weaknesses = report.aiInsights?.mainWeaknesses ?? Array.from(new Set(report.actionPlan.slice(0, 6).map((i) => i.title)));
   if (weaknesses.length > 0) {
     canvas.divider();
-    const headingH = canvas.measure("Main Weaknesses", { size: 11.5, font: "bold", gap: 6 });
+    const headingH = canvas.measure("Aree da Migliorare", { size: 11.5, font: "bold", gap: 6 });
     canvas.ensureSpace(headingH + 16);
-    canvas.kicker("Main Weaknesses");
+    canvas.kicker("Aree da Migliorare");
     for (const w of weaknesses) canvas.hangingLine("-", w, { size: 9.5, gap: 5, maxLines: 2, lineHeightMult: 1.3 });
     canvas.y -= 4;
   }
@@ -58,9 +58,9 @@ export function drawAiReportPage(canvas: PdfCanvas, report: DigitalCheckReport) 
   const priorities = report.aiInsights?.strategicPriorities ?? report.recommendedActions;
   if (priorities.length > 0) {
     canvas.divider();
-    const headingH = canvas.measure("Strategic Priorities", { size: 11.5, font: "bold", gap: 6 });
+    const headingH = canvas.measure("Priorita' Strategiche", { size: 11.5, font: "bold", gap: 6 });
     canvas.ensureSpace(headingH + 16);
-    canvas.kicker("Strategic Priorities");
+    canvas.kicker("Priorita' Strategiche");
     priorities.forEach((p, i) => canvas.hangingLine(`${i + 1}.`, p, { size: 9.5, color: COLOR.ink, gap: 5, maxLines: 2, lineHeightMult: 1.3 }));
     canvas.y -= 4;
   }
@@ -73,9 +73,9 @@ export function drawAiReportPage(canvas: PdfCanvas, report: DigitalCheckReport) 
 
   if (quickWins.length > 0) {
     canvas.divider();
-    const headingH = canvas.measure("Quick Wins", { size: 11.5, font: "bold", gap: 4 });
+    const headingH = canvas.measure("Interventi Rapidi", { size: 11.5, font: "bold", gap: 4 });
     canvas.ensureSpace(headingH + 24);
-    canvas.kicker("Quick Wins");
+    canvas.kicker("Interventi Rapidi");
     canvas.text("Interventi relativamente semplici che possono migliorare rapidamente alcune aree.", { size: 8.5, color: COLOR.inkSoft, gap: 8 });
     for (const q of quickWins) canvas.hangingLine(">", q, { size: 9.5, glyphColor: COLOR.accent, gap: 5, maxLines: 2, lineHeightMult: 1.3 });
     canvas.y -= 4;
@@ -83,9 +83,9 @@ export function drawAiReportPage(canvas: PdfCanvas, report: DigitalCheckReport) 
 
   if (strategicImprovements.length > 0) {
     canvas.divider();
-    const headingH = canvas.measure("Strategic Improvements", { size: 11.5, font: "bold", gap: 4 });
+    const headingH = canvas.measure("Interventi Strategici", { size: 11.5, font: "bold", gap: 4 });
     canvas.ensureSpace(headingH + 24);
-    canvas.kicker("Strategic Improvements");
+    canvas.kicker("Interventi Strategici");
     canvas.text("Interventi piu' strutturali, con un impatto piu' ampio ma un respiro piu' lungo.", { size: 8.5, color: COLOR.inkSoft, gap: 8 });
     for (const s of strategicImprovements) canvas.hangingLine(">", s, { size: 9.5, gap: 5, maxLines: 2, lineHeightMult: 1.3 });
   }

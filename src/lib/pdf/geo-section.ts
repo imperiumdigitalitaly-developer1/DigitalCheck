@@ -162,18 +162,18 @@ export function drawGeoOverviewPage(canvas: PdfCanvas, geo: GeoReport) {
   canvas.divider();
 
   if (geo.strengths.length > 0) {
-    const headingH = canvas.measure("GEO Strengths", { size: 12, font: "bold", gap: 6 });
+    const headingH = canvas.measure("Punti di Forza GEO", { size: 12, font: "bold", gap: 6 });
     canvas.ensureSpace(headingH + 20);
-    canvas.kicker("GEO Strengths");
+    canvas.kicker("Punti di Forza GEO");
     for (const s of geo.strengths) canvas.hangingLine("+", s, { size: 9.5, glyphColor: COLOR.accent, gap: 4, maxLines: 2 });
     canvas.y -= 4;
   }
 
   const opportunities = sortedGeoIssues(geo.issues).slice(0, 4);
   if (opportunities.length > 0) {
-    const headingH = canvas.measure("GEO Opportunities", { size: 12, font: "bold", gap: 6 });
+    const headingH = canvas.measure("Opportunita' GEO", { size: 12, font: "bold", gap: 6 });
     canvas.ensureSpace(headingH + 20);
-    canvas.kicker("GEO Opportunities");
+    canvas.kicker("Opportunita' GEO");
     for (const o of opportunities) canvas.hangingLine(">", o.title, { size: 9.5, gap: 4, maxLines: 1 });
   }
 }
@@ -235,7 +235,7 @@ function drawGeoIssueCard(canvas: PdfCanvas, issue: GeoIssue) {
 }
 
 export function drawGeoIssuesPage(canvas: PdfCanvas, geo: GeoReport) {
-  canvas.sectionTitle("GEO — Problemi e Action Plan", {
+  canvas.sectionTitle("GEO — Problemi e Piano d'Azione", {
     subtitle: "Le criticita' rilevate, in ordine di priorita', e cosa fare per ciascuna.",
   });
 
@@ -250,9 +250,9 @@ export function drawGeoIssuesPage(canvas: PdfCanvas, geo: GeoReport) {
   const unanswered = geo.answerabilityQueries.filter((q) => !q.answered);
   if (geo.answerabilityQueries.length > 0) {
     canvas.divider();
-    const headingH = canvas.measure("Answerability", { size: 12.5, font: "bold", gap: 4 });
+    const headingH = canvas.measure("Capacita' di Risposta", { size: 12.5, font: "bold", gap: 4 });
     canvas.ensureSpace(headingH + 40);
-    canvas.kicker("Answerability");
+    canvas.kicker("Capacita' di Risposta");
     canvas.text(
       `${geo.answerabilityQueries.length - unanswered.length}/${geo.answerabilityQueries.length} domande realistiche generate dal contenuto del sito trovano risposta nel testo.`,
       { size: 9, color: COLOR.inkSoft, gap: 10 }
