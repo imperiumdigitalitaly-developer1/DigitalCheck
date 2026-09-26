@@ -31,7 +31,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.userId } });
   const limits = await getPlanLimits(user.plan);
 
-  if (user.plan === "FREE") {
+  // Gli account admin (vedi grantOwnerPrivilegesIfNeeded/OWNER_EMAIL) non
+  // sono soggetti alle quote di analisi: servono per gestire/testare la
+  // piattaforma, non per l'uso normale di un cliente.
+  if (!user.isAdmin && user.plan === "FREE") {
     const scansThisWeek = await countScansThisWeek(session.userId);
     const cap = limits.maxScansWeek ?? 1;
     if (scansThisWeek >= cap) {
@@ -43,7 +46,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         { status: 403 }
       );
     }
-  } else {
+  } else if (!user.isAdmin) {
     const scansThisMonth = await countScansThisMonth(session.userId);
     if (scansThisMonth >= limits.maxScansMonth) {
       return NextResponse.json(
