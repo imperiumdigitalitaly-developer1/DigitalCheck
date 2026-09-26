@@ -20,10 +20,10 @@ export default function ChiSiamoPage() {
 
       <LegalSection title="Perché esiste DigitalCheck">
         <p>
-          Lavorando ogni giorno con piccole attività abbiamo visto lo stesso problema ripetersi:
-          un sito viene realizzato, pubblicato, e poi nessuno lo controlla più. Nel frattempo
-          cambiano gli algoritmi dei motori di ricerca, le aspettative degli utenti su mobile,
-          i tempi di caricamento accettabili — e il sito resta fermo.
+          Tra le piccole attività è un problema comune: un sito viene realizzato, pubblicato, e
+          poi nessuno lo controlla più. Nel frattempo cambiano gli algoritmi dei motori di
+          ricerca, le aspettative degli utenti su mobile, i tempi di caricamento accettabili — e
+          il sito resta fermo.
         </p>
         <p>
           DigitalCheck nasce per colmare esattamente questo vuoto: uno strumento che analizza un
@@ -38,10 +38,9 @@ export default function ChiSiamoPage() {
         <p>
           Imperium Digital realizza siti web e applicazioni su misura per piccole attività,
           seguendo l&apos;intero percorso: dalla progettazione alla pubblicazione, fino alla
-          manutenzione nel tempo. DigitalCheck è nato all&apos;interno di questo lavoro quotidiano,
-          come lo strumento che avremmo voluto avere per monitorare i siti dei nostri clienti in
-          modo oggettivo — ed è oggi disponibile per chiunque voglia capire davvero come sta
-          andando il proprio sito.
+          manutenzione nel tempo. DigitalCheck nasce da quest&apos;esperienza, come lo strumento
+          che avremmo voluto avere per monitorare i siti realizzati in modo oggettivo — ed è oggi
+          disponibile per chiunque voglia capire davvero come sta andando il proprio sito.
         </p>
       </LegalSection>
 
