@@ -1,8 +1,55 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { DigitalScoreGauge } from "@/components/landing/DigitalScoreGauge";
 import { AnimatedBar } from "@/components/landing/AnimatedBar";
 import { BAND_HEX, BAND_LABEL } from "@/components/landing/band";
+import { SITE_URL } from "@/lib/seo/site";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
+
+// Dati strutturati JSON-LD: SoftwareApplication descrive DigitalCheck come
+// prodotto (categoria BusinessApplication, offerta del piano Pro), mentre
+// Organization identifica Imperium Digital come editore. Niente
+// LocalBusiness: DigitalCheck e' un servizio online, non un'attivita' con
+// sede fisica al pubblico.
+const SOFTWARE_APPLICATION_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "DigitalCheck",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: SITE_URL,
+  description:
+    "Analisi tecnica, SEO, performance, mobile, contenuti, conversione, accessibilità e GEO per siti web, con Digital Score, piano d'azione e report PDF.",
+  offers: {
+    "@type": "Offer",
+    name: "DigitalCheck Pro",
+    price: "6.99",
+    priceCurrency: "EUR",
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      price: "6.99",
+      priceCurrency: "EUR",
+      unitText: "month",
+    },
+    url: `${SITE_URL}/#pricing`,
+  },
+  publisher: { "@type": "Organization", name: "Imperium Digital", url: SITE_URL },
+};
+
+const ORGANIZATION_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Imperium Digital",
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo-transparent.png`,
+  email: "imperiumdigitalitaly@gmail.com",
+  description: "Startup che realizza siti web e app per piccole attività, editrice di DigitalCheck.",
+};
 
 // Dati dimostrativi per il mockup del Digital Score in homepage: mai
 // un'analisi reale, dichiarato esplicitamente nella UI (device-foot).
@@ -137,18 +184,40 @@ const PRO_FEATURES = [
 
 const FAQ = [
   {
-    q: "L'analisi è davvero gratuita?",
-    a: "Sì, il piano Free include un'analisi di base senza costi. Il piano Pro sblocca analisi complete, monitoraggio e report PDF.",
+    q: "Cos'è DigitalCheck?",
+    a: "È uno strumento di audit che analizza un sito web su 8 aree — SEO, performance, mobile, contenuti, conversione, accessibilità, aspetti tecnici e GEO (predisposizione ai motori di ricerca generativi) — e restituisce un Digital Score, i problemi rilevati e un piano d'azione pratico, in un report scaricabile in PDF.",
   },
   {
-    q: "I dati mostrati sono reali?",
-    a: "Sì. Quando un dato non può essere verificato con gli strumenti attualmente collegati, il report lo dichiara esplicitamente invece di stimarlo come fosse certo.",
+    q: "Come funziona l'analisi?",
+    a: "Inserisci l'indirizzo del sito, il tipo di attività e l'obiettivo principale: DigitalCheck esegue una scansione tecnica reale (crawling del sito e dati Google PageSpeed) e restituisce i risultati con indicazioni pratiche per migliorare, spiegate in linguaggio semplice.",
   },
   {
-    q: "DigitalCheck sostituisce Google PageSpeed o Lighthouse?",
-    a: "No: li usa come una delle fonti tecniche possibili, ma il valore principale è spiegare cosa significano i dati per la tua attività e cosa fare in pratica.",
+    q: "Quanto costa DigitalCheck?",
+    a: "Il piano Free è gratuito e include un'analisi essenziale (1 sito al mese, 1 analisi a settimana, report PDF sintetico). Il piano Pro costa 6,99 € al mese e sblocca analisi complete, siti illimitati, assistente AI e monitoraggio.",
+  },
+  {
+    q: "Cosa include il piano Pro?",
+    a: "Siti illimitati, fino a 200 analisi al mese, analisi complete su tutte le 8 aree, report PDF professionali di almeno 5 pagine, assistente AI integrato, storico e monitoraggio periodico dei siti, oltre al Gestionale con Web Analytics, Search Console e Metrics.",
+  },
+  {
+    q: "Come si disdice l'abbonamento Pro?",
+    a: "In qualsiasi momento, dalla pagina Impostazioni del tuo account: da lì accedi al portale clienti Stripe e gestisci o annulli l'abbonamento autonomamente. L'accesso Pro resta attivo fino alla fine del periodo già pagato, senza costi aggiuntivi.",
+  },
+  {
+    q: "Come vengono trattati i miei dati?",
+    a: "I dati del tuo account e delle analisi sono trattati nel rispetto del GDPR e non vengono mai ceduti a terzi per finalità di marketing. I dati di pagamento sono gestiti interamente da Stripe. Trovi tutti i dettagli nella nostra Privacy Policy.",
   },
 ];
+
+const FAQ_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ.map((item) => ({
+    "@type": "Question",
+    name: item.q,
+    acceptedAnswer: { "@type": "Answer", text: item.a },
+  })),
+};
 
 const CheckIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 h-[15px] w-[15px] shrink-0">
@@ -215,6 +284,9 @@ export default function HomePage() {
 
   return (
     <main id="top">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SOFTWARE_APPLICATION_SCHEMA) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_SCHEMA) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_SCHEMA) }} />
       <LandingNav />
 
       {/* HERO */}
@@ -238,7 +310,7 @@ export default function HomePage() {
               Scopri quanto vale davvero il tuo sito web.
             </h1>
             <p className="mt-[18px] max-w-[52ch] text-lg leading-relaxed text-ink-soft">
-              DigitalCheck analizza il tuo sito sotto molteplici aspetti e trasforma i dati in indicazioni concrete per migliorarlo.
+              DigitalCheck analizza il tuo sito su 8 aree — SEO, performance, mobile, contenuti, conversione, accessibilità, tecnica e GEO — e trasforma i dati in un piano d&apos;azione concreto e in un report PDF, così sai esattamente cosa migliorare e perché.
             </p>
             <div className="mt-7 flex flex-wrap items-center gap-3.5">
               <Link
@@ -517,7 +589,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 gap-9 sm:grid-cols-[1.4fr_1fr_1fr_1fr]">
             <div>
               <div className="mb-2.5 flex items-center gap-2.5">
-                <img src="/logo-transparent.png" alt="" className="h-[26px] w-auto" />
+                <Image src="/logo-transparent.png" alt="" width={52} height={32} className="h-[26px] w-auto" />
                 <span className="flex flex-col leading-tight">
                   <span className="font-display text-lg font-semibold">DigitalCheck</span>
                   <span className="text-[10px] text-ink-faint">powered by Imperium Digital</span>
@@ -528,7 +600,7 @@ export default function HomePage() {
               </p>
             </div>
             <div>
-              <h4 className="mb-3.5 text-xs font-semibold uppercase tracking-wider text-ink-faint">Prodotto</h4>
+              <h3 className="mb-3.5 text-xs font-semibold uppercase tracking-wider text-ink-faint">Prodotto</h3>
               <ul className="flex flex-col gap-2.5 text-[13.8px] text-ink-soft">
                 <li>
                   <a href="#come-funziona" className="hover:text-ink">
@@ -543,7 +615,7 @@ export default function HomePage() {
               </ul>
             </div>
             <div>
-              <h4 className="mb-3.5 text-xs font-semibold uppercase tracking-wider text-ink-faint">Risorse</h4>
+              <h3 className="mb-3.5 text-xs font-semibold uppercase tracking-wider text-ink-faint">Risorse</h3>
               <ul className="flex flex-col gap-2.5 text-[13.8px] text-ink-soft">
                 <li>
                   <a href="#analisi" className="hover:text-ink">
@@ -555,10 +627,15 @@ export default function HomePage() {
                     FAQ
                   </a>
                 </li>
+                <li>
+                  <Link href="/chi-siamo" className="hover:text-ink">
+                    Chi siamo
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
-              <h4 className="mb-3.5 text-xs font-semibold uppercase tracking-wider text-ink-faint">Legal</h4>
+              <h3 className="mb-3.5 text-xs font-semibold uppercase tracking-wider text-ink-faint">Legal</h3>
               <ul className="flex flex-col gap-2.5 text-[13.8px] text-ink-soft">
                 <li>
                   <Link href="/privacy" className="hover:text-ink">

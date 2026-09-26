@@ -3,11 +3,13 @@ import Image from "next/image";
 
 export function LegalPageShell({
   title,
+  eyebrow = "Legal",
   updated,
   children,
 }: {
   title: string;
-  updated: string;
+  eyebrow?: string;
+  updated?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -31,10 +33,10 @@ export function LegalPageShell({
         <div className="mx-auto max-w-prose">
           <div className="mb-3.5 flex items-center gap-2.5">
             <span className="block h-px w-[26px] bg-accent" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-accent">Legal</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-accent">{eyebrow}</span>
           </div>
           <h1 className="text-balance font-display text-[34px] font-semibold leading-[1.1] tracking-tight sm:text-[44px]">{title}</h1>
-          <p className="mt-3 text-sm text-ink-faint">Ultimo aggiornamento: {updated}</p>
+          {updated && <p className="mt-3 text-sm text-ink-faint">Ultimo aggiornamento: {updated}</p>}
 
           <div className="prose-legal mt-10 space-y-8">{children}</div>
         </div>
@@ -49,6 +51,10 @@ export function LegalPageShell({
           </span>
         </div>
         <nav className="mt-4 flex items-center justify-center gap-4 text-xs text-ink-soft">
+          <Link href="/chi-siamo" className="hover:text-ink">
+            Chi siamo
+          </Link>
+          <span aria-hidden="true">·</span>
           <Link href="/privacy" className="hover:text-ink">
             Privacy Policy
           </Link>

@@ -158,7 +158,7 @@ export default function AnalyzeSitePage() {
     <DashboardShell user={user}>
       <h1 className="font-display text-2xl">Analizza sito</h1>
       <p className="mt-1 text-sm text-ink-soft">
-        Inserisci l&apos;indirizzo del sito da analizzare: performance, SEO, accessibilita' e aspetti tecnici.
+        Inserisci l&apos;indirizzo del sito da analizzare: performance, SEO, accessibilita&apos; e aspetti tecnici.
       </p>
 
       {status !== "done" && (
@@ -179,7 +179,7 @@ export default function AnalyzeSitePage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label htmlFor="businessType" className="mb-1 block text-sm text-ink-soft">
-                Tipo di attivita'
+                Tipo di attivita&apos;
               </label>
               <select
                 id="businessType"

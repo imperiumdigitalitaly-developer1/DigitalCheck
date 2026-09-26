@@ -51,7 +51,7 @@ export default function RegisterPage() {
         <div className="text-center">
           <h1 className="font-display text-2xl font-semibold tracking-tight">Account creato</h1>
           <p className="mt-2 text-[15px] text-ink-soft">
-            Nessun provider email e' configurato in questo ambiente: usa questo link per confermare
+            Nessun provider email e&apos; configurato in questo ambiente: usa questo link per confermare
             l&apos;indirizzo (solo in sviluppo).
           </p>
           <a href={devLink} className="mt-4 inline-block break-all text-sm text-accent hover:underline">
@@ -70,12 +70,12 @@ export default function RegisterPage() {
   return (
     <AuthShell>
       <h1 className="font-display text-[28px] font-semibold tracking-tight">Crea il tuo account</h1>
-      <p className="mt-2 text-[15px] text-ink-soft">Monitora e migliora il sito della tua attivita'.</p>
+      <p className="mt-2 text-[15px] text-ink-soft">Monitora e migliora il sito della tua attivita&apos;.</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-3.5">
         <div>
           <label htmlFor="organizationName" className="mb-1 block text-sm text-ink-soft">
-            Nome attivita' (opzionale)
+            Nome attivita&apos; (opzionale)
           </label>
           <input
             id="organizationName"
@@ -126,7 +126,7 @@ export default function RegisterPage() {
       </form>
 
       <p className="mt-6 text-center text-sm text-ink-soft">
-        Hai gia' un account?{" "}
+        Hai gia&apos; un account?{" "}
         <Link href="/login" className="font-medium text-accent hover:underline">
           Accedi
         </Link>

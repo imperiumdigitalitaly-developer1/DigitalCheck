@@ -253,7 +253,7 @@ function GestionaleView() {
         <div className="mx-auto max-w-xl py-16 text-center">
           <h1 className="font-display text-2xl">Il tuo centro di controllo</h1>
           <p className="mx-auto mt-3 max-w-prose text-ink-soft">
-            Monitora performance, traffico, metriche, visibilita' e stato tecnico dei tuoi siti da un unico
+            Monitora performance, traffico, metriche, visibilita&apos; e stato tecnico dei tuoi siti da un unico
             ambiente.
           </p>
           <div className="mt-6 text-left">
@@ -352,7 +352,7 @@ function GestionaleView() {
           <section>
             <h2 className="font-display text-lg">Problemi ricorrenti</h2>
             <p className="mt-1 text-xs text-ink-soft">
-              Conteggio reale dei problemi identici rilevati sull&apos;ultima analisi di piu' siti — non un'inferenza.
+              Conteggio reale dei problemi identici rilevati sull&apos;ultima analisi di piu&apos; siti — non un&apos;inferenza.
             </p>
             {!overview || overview.recurringIssues.length === 0 ? (
               <p className="mt-3 text-sm text-ink-soft">Nessun problema ricorrente tra i tuoi siti al momento.</p>
@@ -580,7 +580,7 @@ function GestionaleView() {
           ) : observability?.error ? (
             <>
               <p className="mt-3 text-sm text-ink-soft">
-                Il monitor e' collegato, ma non e' stato possibile leggerne lo stato in questo momento.
+                Il monitor e&apos; collegato, ma non e&apos; stato possibile leggerne lo stato in questo momento.
               </p>
               <p className="mt-1 text-sm text-severity-high">{observability.error}</p>
               <button
@@ -594,7 +594,7 @@ function GestionaleView() {
             <>
               <p className="mt-3 text-sm text-ink-soft">Monitoring non ancora configurato per questo sito.</p>
               <p className="mt-1 text-sm text-ink-soft">
-                Una volta collegato, qui compariranno disponibilita', tempi di risposta ed eventuali interruzioni
+                Una volta collegato, qui compariranno disponibilita&apos;, tempi di risposta ed eventuali interruzioni
                 rilevate realmente da UptimeRobot.
               </p>
               {observability.providerConfigured ? (

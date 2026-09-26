@@ -4,6 +4,7 @@ import { LegalPageShell, LegalSection, DefaultNote } from "@/components/legal/Le
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "Informativa sul trattamento dei dati personali degli utenti di DigitalCheck.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {

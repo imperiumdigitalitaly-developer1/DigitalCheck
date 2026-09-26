@@ -111,7 +111,7 @@ export default function AssistantPage() {
       <DashboardShell user={user}>
         <h1 className="font-display text-2xl">DigitalCheck AI Assistant</h1>
         <p className="mt-2 max-w-prose text-ink-soft">
-          Analizza i risultati, interpreta le criticita' e ricevi indicazioni operative personalizzate per ogni sito
+          Analizza i risultati, interpreta le criticita&apos; e ricevi indicazioni operative personalizzate per ogni sito
           che monitori.
         </p>
         <div className="mt-6 max-w-lg">
@@ -161,7 +161,7 @@ export default function AssistantPage() {
         {history.length === 0 && (
           <p className="text-sm text-ink-soft">
             Fai una domanda sul sito selezionato — es. &quot;come miglioro il punteggio SEO?&quot; o &quot;spiegami il
-            problema piu' importante&quot;.
+            problema piu&apos; importante&quot;.
           </p>
         )}
         <div className="space-y-4">

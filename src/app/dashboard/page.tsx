@@ -166,7 +166,7 @@ export default function DashboardPage() {
 
       {recentIssueSites.length > 0 && (
         <section className="mt-8">
-          <h2 className="font-display text-lg">Criticita' principali</h2>
+          <h2 className="font-display text-lg">Criticita&apos; principali</h2>
           <div className="mt-3 space-y-2">
             {recentIssueSites.map((s) => (
               <Link

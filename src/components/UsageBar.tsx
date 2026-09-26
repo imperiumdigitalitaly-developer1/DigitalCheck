@@ -18,7 +18,7 @@ export function UsageBar({ label, used, max }: { label: string; used: number; ma
       </div>
       {atLimit && (
         <p className="mt-1.5 text-xs text-severity-high">
-          Limite raggiunto. Sara' nuovamente disponibile al prossimo rinnovo.
+          Limite raggiunto. Sara&apos; nuovamente disponibile al prossimo rinnovo.
         </p>
       )}
     </div>
