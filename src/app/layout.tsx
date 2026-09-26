@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ChatWidget } from "@/components/ChatWidget";
+import { SITE_URL } from "@/lib/seo/site";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -24,6 +25,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "DigitalCheck — Website analysis e SEO audit con AI",
     template: "%s · DigitalCheck",

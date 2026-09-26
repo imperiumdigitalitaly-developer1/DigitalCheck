@@ -4,6 +4,7 @@ import { LegalPageShell, LegalSection, DefaultNote } from "@/components/legal/Le
 export const metadata: Metadata = {
   title: "Termini di Servizio",
   description: "Termini e condizioni di utilizzo della piattaforma DigitalCheck.",
+  alternates: { canonical: "/termini" },
 };
 
 export default function TerminiPage() {

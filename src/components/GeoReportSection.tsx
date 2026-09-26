@@ -43,8 +43,8 @@ export function GeoReportSection({
             <p className="mt-2 text-ink-soft">{geo.aiSummary}</p>
           ) : (
             <p className="mt-2 text-ink-soft">
-              Punteggio calcolato su {geo.categoryScores.filter((c) => c.applicable).length} dimensioni: accessibilita'
-              per i sistemi AI, chiarezza semantica e dell&apos;entita', completezza delle informazioni,
+              Punteggio calcolato su {geo.categoryScores.filter((c) => c.applicable).length} dimensioni: accessibilita&apos;
+              per i sistemi AI, chiarezza semantica e dell&apos;entita&apos;, completezza delle informazioni,
               answerability, struttura del contenuto, segnali di fiducia e dati strutturati.
             </p>
           )}

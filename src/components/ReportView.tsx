@@ -93,14 +93,14 @@ export function ReportView({
         <section className="rounded-[14px] border border-dashed border-line bg-white p-6 text-center">
           {regenerated ? (
             <p className="text-sm text-ink-soft">
-              Approfondimento AI generato: sara' incluso nel PDF e nell'assistente da ora in poi.
+              Approfondimento AI generato: sara&apos; incluso nel PDF e nell&apos;assistente da ora in poi.
             </p>
           ) : (
             <>
               <h3 className="font-display text-lg">Approfondimento AI non incluso in questa versione del report</h3>
               <p className="mx-auto mt-1 max-w-prose text-sm text-ink-soft">
-                Le indicazioni si basano sui controlli tecnici automatici. Puoi generare ora l'interpretazione AI
-                dell'audit: verra' salvata e inclusa nel PDF.
+                Le indicazioni si basano sui controlli tecnici automatici. Puoi generare ora l&apos;interpretazione AI
+                dell&apos;audit: verra&apos; salvata e inclusa nel PDF.
               </p>
               <button
                 onClick={handleRegenerateAi}
@@ -154,8 +154,8 @@ export function ReportView({
           <>
             <h3 className="font-display text-lg">Vuoi il dettaglio completo?</h3>
             <p className="mx-auto mt-1 max-w-prose text-sm text-ink-soft">
-              Scarica il report PDF: contiene metodologia, sottopunteggi, problemi rilevati con gravita' e impatto,
-              raccomandazioni, cross-analysis tra le categorie e un piano d'azione prioritizzato.
+              Scarica il report PDF: contiene metodologia, sottopunteggi, problemi rilevati con gravita&apos; e impatto,
+              raccomandazioni, cross-analysis tra le categorie e un piano d&apos;azione prioritizzato.
             </p>
           </>
         ) : (
@@ -171,7 +171,7 @@ export function ReportView({
       <section className="rounded-lg bg-ink p-8 text-center text-paper">
         <h3 className="font-display text-2xl">Vuoi migliorare il tuo sito?</h3>
         <p className="mx-auto mt-2 max-w-prose text-paper/80">
-          Richiedi una consulenza per un piano d'azione su misura per {report.requestedUrl}.
+          Richiedi una consulenza per un piano d&apos;azione su misura per {report.requestedUrl}.
         </p>
         <button
           onClick={() => setShowConsultation(true)}

@@ -53,7 +53,7 @@ export function ScoreTrendChart({ points, label }: { points: TrendPoint[]; label
     const only = valid[0];
     return (
       <p className="text-sm text-ink-soft">
-        Una sola analisi disponibile finora ({only?.score}/100): il grafico dell&apos;andamento comparira' dopo la
+        Una sola analisi disponibile finora ({only?.score}/100): il grafico dell&apos;andamento comparira&apos; dopo la
         prossima analisi.
       </p>
     );

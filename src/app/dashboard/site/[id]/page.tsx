@@ -318,7 +318,7 @@ export default function SiteDetailPage({ params }: { params: { id: string } }) {
               className="mt-3 rounded-lg border border-dashed border-line bg-white px-5 py-4 text-left text-sm text-ink-soft hover:border-accent"
             >
               Disponibile con il piano Pro: chiedi consigli specifici e ricevi testi pronti da incollare
-              (title, meta description, correzioni). Tocca per saperne di piu'.
+              (title, meta description, correzioni). Tocca per saperne di piu&apos;.
             </button>
           ) : (
             <div className="mt-3 rounded-[14px] border border-line bg-white p-5">
