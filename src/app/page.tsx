@@ -469,6 +469,13 @@ export default function HomePage() {
             <h2 className="text-balance font-display text-[clamp(28px,4vw,38px)] font-semibold">Scopri DigitalCheck.</h2>
             <p className="mt-3 text-[16.5px] leading-relaxed text-ink-soft">Analizza, monitora e migliora i tuoi siti web.</p>
           </div>
+          <p className="mx-auto mb-8 max-w-[60ch] animate-fadeUp text-center text-[16.5px] leading-relaxed text-ink-soft [animation-delay:80ms]">
+            DigitalCheck analizza il tuo sito, individua errori e punti deboli e ti indica cosa
+            correggere per renderlo più professionale e più efficace nel portarti nuovi contatti.
+            Parti con il piano gratuito per avere un primo quadro chiaro della situazione; passa a
+            Pro quando vuoi il report completo e un assistente AI sempre a disposizione per
+            gestirlo e migliorarlo.
+          </p>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="animate-fadeUp rounded-[14px] border border-line bg-white p-7">
               <h3 className="text-xl font-semibold">Free</h3>
